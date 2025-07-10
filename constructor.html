@@ -36,7 +36,6 @@
         <option value="number">Número</option>
         <option value="select">Lista desplegable</option>
         <option value="textarea">Área de texto</option>
-        <option value="nuevo">+ Agregar nuevo tipo personalizado</option>
       </select>
     </label>
 
@@ -85,20 +84,6 @@
             </label>
           </div>
         `;
-      }
-
-      if (tipo === "nuevo") {
-        const nuevo = prompt("Ingresá el nuevo tipo personalizado:");
-        if (nuevo && nuevo.trim() !== "") {
-          const select = document.getElementById("nuevoTipo");
-          const opt = document.createElement("option");
-          opt.value = nuevo.trim();
-          opt.textContent = nuevo.trim();
-          select.appendChild(opt);
-          select.value = nuevo.trim();
-        } else {
-          select.value = "";
-        }
       }
     }
 
