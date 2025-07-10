@@ -13,8 +13,8 @@
 <body>
   <h2>Responder Formulario</h2>
 
-  <label for="formId">Ingrese el ID del formulario:</label>
-  <input type="text" id="formId" placeholder="Ej: form_1689000000000" />
+  <label for="formSelect">Seleccioná un formulario:</label>
+  <select id="formSelect"><option>Cargando...</option></select>
   <button id="cargarForm">Cargar formulario</button>
 
   <form id="formulario" style="display:none;">
@@ -25,10 +25,30 @@
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
+    async function cargarListaFormularios() {
+      const res = await fetch(urlWebApp + "?action=listarFormularios");
+      const json = await res.json();
+      const select = document.getElementById("formSelect");
+
+      if (json.status === "ok") {
+        select.innerHTML = '<option value="">Seleccionar formulario...</option>';
+        json.formularios.forEach(f => {
+          const option = document.createElement("option");
+          option.value = f.id;
+          option.textContent = f.titulo;
+          select.appendChild(option);
+        });
+      } else {
+        select.innerHTML = '<option value="">Error al cargar formularios</option>';
+      }
+    }
+
+    window.onload = cargarListaFormularios;
+
     document.getElementById("cargarForm").addEventListener("click", async () => {
-      const formId = document.getElementById("formId").value.trim();
+      const formId = document.getElementById("formSelect").value;
       if (!formId) {
-        alert("Por favor, ingrese el ID del formulario.");
+        alert("Seleccioná un formulario.");
         return;
       }
 
@@ -49,8 +69,6 @@
         label.textContent = campo.label;
 
         let input;
-
-        // Campo SELECT
         if (campo.type === "select") {
           input = document.createElement("select");
           (campo.options || []).forEach(opt => {
@@ -59,30 +77,18 @@
             option.textContent = opt;
             input.appendChild(option);
           });
-        }
-
-        // Campo TEXTAREA
-        else if (campo.type === "textarea") {
+        } else if (campo.type === "textarea") {
           input = document.createElement("textarea");
           input.rows = 4;
-        }
-
-        // Campo NUMBER con opciones personalizadas
-        else if (campo.type === "number") {
+        } else if (campo.type === "number") {
           input = document.createElement("input");
           input.type = "number";
-
-          if (campo.format === "entero") input.step = "1";
-          else input.step = "0.01";
-
+          input.step = campo.format === "entero" ? "1" : "0.01";
           if (campo.isCurrency) {
             input.classList.add("moneda");
             input.placeholder = "$";
           }
-        }
-
-        // Campo estándar (text, etc.)
-        else {
+        } else {
           input = document.createElement("input");
           input.type = campo.type || "text";
         }
@@ -94,11 +100,12 @@
       });
 
       document.getElementById("formulario").style.display = "block";
+      document.getElementById("formulario").dataset.formId = formId;
     });
 
     document.getElementById("formulario").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const formId = document.getElementById("formId").value.trim();
+      const formId = e.target.dataset.formId;
 
       const datos = {};
       const inputs = e.target.querySelectorAll("input, select, textarea");
