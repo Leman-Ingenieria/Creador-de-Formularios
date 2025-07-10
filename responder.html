@@ -3,10 +3,11 @@
 <head>
   <title>Responder Formulario</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    label { display: block; margin-top: 15px; }
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
     input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
     button { margin-top: 20px; padding: 10px 15px; }
+    .moneda::before { content: "$"; margin-right: 5px; }
   </style>
 </head>
 <body>
@@ -32,12 +33,8 @@
       }
 
       const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(formId));
-      if (!res.ok) {
-        alert("Error al cargar formulario.");
-        return;
-      }
-
       const json = await res.json();
+
       if (json.status !== "ok") {
         alert("Formulario no encontrado.");
         return;
@@ -52,14 +49,42 @@
         label.textContent = campo.label;
 
         let input;
+
+        // Campo SELECT
         if (campo.type === "select") {
           input = document.createElement("select");
-          // Puedes extender para agregar opciones
-        } else if (campo.type === "textarea") {
+          (campo.options || []).forEach(opt => {
+            const option = document.createElement("option");
+            option.value = opt;
+            option.textContent = opt;
+            input.appendChild(option);
+          });
+        }
+
+        // Campo TEXTAREA
+        else if (campo.type === "textarea") {
           input = document.createElement("textarea");
-        } else {
+          input.rows = 4;
+        }
+
+        // Campo NUMBER con opciones personalizadas
+        else if (campo.type === "number") {
           input = document.createElement("input");
-          input.type = campo.type === "number" ? "number" : "text";
+          input.type = "number";
+
+          if (campo.format === "entero") input.step = "1";
+          else input.step = "0.01";
+
+          if (campo.isCurrency) {
+            input.classList.add("moneda");
+            input.placeholder = "$";
+          }
+        }
+
+        // Campo estándar (text, etc.)
+        else {
+          input = document.createElement("input");
+          input.type = campo.type || "text";
         }
 
         input.name = campo.label;
@@ -93,8 +118,9 @@
       });
 
       if (res.ok) {
-        alert("Respuesta enviada. ¡Gracias!");
+        alert("Respuesta enviada correctamente. ¡Gracias!");
         e.target.reset();
+        document.getElementById("formulario").style.display = "none";
       } else {
         alert("Error al enviar la respuesta.");
       }
