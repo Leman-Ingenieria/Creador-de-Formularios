@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Responder Formulario</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    label { display: block; margin-top: 15px; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+    button { margin-top: 20px; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+  <h2>Responder Formulario</h2>
+
+  <label for="formId">Ingrese el ID del formulario:</label>
+  <input type="text" id="formId" placeholder="Ej: form_1689000000000" />
+  <button id="cargarForm">Cargar formulario</button>
+
+  <form id="formulario" style="display:none;">
+    <div id="campos"></div>
+    <button type="submit">Enviar respuesta</button>
+  </form>
+
+  <script>
+    const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
+
+    document.getElementById("cargarForm").addEventListener("click", async () => {
+      const formId = document.getElementById("formId").value.trim();
+      if (!formId) {
+        alert("Por favor, ingrese el ID del formulario.");
+        return;
+      }
+
+      const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(formId));
+      if (!res.ok) {
+        alert("Error al cargar formulario.");
+        return;
+      }
+
+      const json = await res.json();
+      if (json.status !== "ok") {
+        alert("Formulario no encontrado.");
+        return;
+      }
+
+      const estructura = json.estructura;
+      const camposDiv = document.getElementById("campos");
+      camposDiv.innerHTML = "";
+
+      estructura.forEach(campo => {
+        const label = document.createElement("label");
+        label.textContent = campo.label;
+
+        let input;
+        if (campo.type === "select") {
+          input = document.createElement("select");
+          // Puedes extender para agregar opciones
+        } else if (campo.type === "textarea") {
+          input = document.createElement("textarea");
+        } else {
+          input = document.createElement("input");
+          input.type = campo.type === "number" ? "number" : "text";
+        }
+
+        input.name = campo.label;
+        input.required = true;
+        camposDiv.appendChild(label);
+        camposDiv.appendChild(input);
+      });
+
+      document.getElementById("formulario").style.display = "block";
+    });
+
+    document.getElementById("formulario").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formId = document.getElementById("formId").value.trim();
+
+      const datos = {};
+      const inputs = e.target.querySelectorAll("input, select, textarea");
+      inputs.forEach(input => {
+        datos[input.name] = input.value;
+      });
+
+      const payload = {
+        action: "guardarRespuesta",
+        id: formId,
+        datos: datos
+      };
+
+      const res = await fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert("Respuesta enviada. ¡Gracias!");
+        e.target.reset();
+      } else {
+        alert("Error al enviar la respuesta.");
+      }
+    });
+  </script>
+</body>
+</html>

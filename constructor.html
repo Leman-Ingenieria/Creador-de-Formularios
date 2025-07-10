@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Crear Formulario</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .campo { margin-bottom: 10px; }
+    input, select { margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Constructor de Formulario</h2>
+  <label>Título del formulario: <input id="tituloForm" /></label>
+  <div id="campos"></div>
+  <button onclick="agregarCampo()">+ Agregar campo</button>
+  <button onclick="guardarFormulario()">💾 Guardar formulario</button>
+
+  <script>
+    const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
+
+    let campos = [];
+
+    function agregarCampo() {
+      const label = prompt("Nombre del campo:");
+      const tipo = prompt("Tipo de campo (text, number, select):", "text");
+
+      if (label && tipo) {
+        campos.push({ label, type: tipo });
+        render();
+      }
+    }
+
+    function render() {
+      const div = document.getElementById("campos");
+      div.innerHTML = "";
+      campos.forEach((c, i) => {
+        const d = document.createElement("div");
+        d.className = "campo";
+        d.innerHTML = `${i + 1}. <strong>${c.label}</strong> (${c.type})`;
+        div.appendChild(d);
+      });
+    }
+
+    async function guardarFormulario() {
+      const titulo = document.getElementById("tituloForm").value.trim();
+      if (!titulo || campos.length === 0) {
+        alert("Completá el título y agregá al menos un campo.");
+        return;
+      }
+
+      const res = await fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "guardarFormulario",
+          titulo: titulo,
+          estructura: campos
+        }),
+      });
+
+      const json = await res.json();
+      if (json.status === "ok") {
+        alert("Formulario guardado con éxito. ID: " + json.id);
+        campos = [];
+        render();
+        document.getElementById("tituloForm").value = "";
+      } else {
+        alert("Error al guardar.");
+      }
+    }
+  </script>
+</body>
+</html>
