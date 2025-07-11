@@ -4,16 +4,59 @@
   <meta charset="UTF-8">
   <title>Editar Formularios</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { text-align: center; }
-    ul { list-style: none; padding: 0; max-width: 600px; margin: auto; }
-    li { background: white; padding: 10px; margin: 10px 0; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-    .acciones button { margin-left: 10px; }
+    body {
+      margin: 0; font-family: Arial, sans-serif; height: 100vh; display: flex; background: #f0f0f0;
+    }
+    nav {
+      width: 250px; background: #143757; color: white; display: flex; flex-direction: column; padding: 20px 0;
+    }
+    nav h2 {
+      text-align: center; margin-bottom: 10px;
+    }
+    nav button {
+      background: none; border: none; color: white; text-align: left; padding: 10px 20px; cursor: pointer; font-size: 15px;
+    }
+    nav button:hover {
+      background: #0e2a53;
+    }
+    main {
+      flex: 1; padding: 20px; overflow-y: auto; background: white;
+    }
+    h1 {
+      text-align: center; margin-top: 0;
+    }
+    .formulario-item {
+      background: #e6e6e6; margin: 5px 0; padding: 10px; border-radius: 5px;
+    }
+    .formulario-item span {
+      font-weight: bold;
+    }
+    .acciones button {
+      margin: 0 5px;
+    }
+    .campo {
+      margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; position: relative;
+    }
+    .campo .eliminar {
+      position: absolute; top: 5px; right: 10px; cursor: pointer; color: red; font-weight: bold;
+    }
+    select, input, textarea {
+      width: 100%; padding: 6px; margin-top: 5px; box-sizing: border-box;
+    }
+    #camposContainer {
+      max-width: 600px; margin: auto; margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>Lista de Formularios</h1>
-  <div id="contenedorFormularios">Cargando formularios...</div>
+  <nav>
+    <h2>Formularios</h2>
+    <div id="listaFormularios">Cargando...</div>
+  </nav>
+  <main>
+    <h1>Editar Formulario</h1>
+    <div id="contenido"></div>
+  </main>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
@@ -23,39 +66,25 @@
         const res = await fetch(`${urlWebApp}?action=getFormularios`);
         const json = await res.json();
 
-        const contenedor = document.getElementById("contenedorFormularios");
+        const lista = document.getElementById("listaFormularios");
+        lista.innerHTML = "";
 
-        if (json.status !== "ok") {
-          contenedor.textContent = "Error al cargar formularios.";
-          return;
-        }
-
-        if (json.formularios.length === 0) {
-          contenedor.textContent = "No hay formularios creados.";
-          return;
-        }
-
-        const lista = document.createElement("ul");
-
-        json.formularios.forEach(form => {
-          if (form.titulo.toUpperCase() === "TÍTULO") return; // ignorar ese
-
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <span>${form.titulo}</span>
+        json.formularios.forEach(f => {
+          if (f.titulo.toUpperCase() === "TÍTULO") return;
+          const div = document.createElement("div");
+          div.className = "formulario-item";
+          div.innerHTML = `
+            <span>${f.titulo}</span>
             <div class="acciones">
-              <button onclick="verFormulario('${form.id}')">Ver</button>
-              <button onclick="editarFormulario('${form.id}')">Editar</button>
+              <button onclick="verFormulario('${f.id}')">Ver</button>
+              <button onclick="editarFormulario('${f.id}')">Editar</button>
+              <button onclick="eliminarFormulario('${f.id}')">Eliminar</button>
             </div>
           `;
-          lista.appendChild(li);
+          lista.appendChild(div);
         });
-
-        contenedor.innerHTML = "";
-        contenedor.appendChild(lista);
       } catch (e) {
-        console.error("Error:", e);
-        document.getElementById("contenedorFormularios").textContent = "Error al conectar con el servidor.";
+        document.getElementById("listaFormularios").innerText = "Error al cargar formularios.";
       }
     }
 
@@ -63,11 +92,138 @@
       window.open(`formulario.html?id=${id}`, "_blank");
     }
 
-    function editarFormulario(id) {
-      window.location.href = `constructor.html?id=${id}`;
+    async function editarFormulario(id) {
+      const cont = document.getElementById("contenido");
+      cont.innerHTML = "Cargando...";
+      try {
+        const res = await fetch(`${urlWebApp}?action=getFormulario&id=${id}`);
+        const json = await res.json();
+
+        if (json.status !== "ok") return cont.innerText = "Error al cargar formulario.";
+
+        cont.innerHTML = `
+          <h2>${json.titulo}</h2>
+          <div id="camposContainer"></div>
+          <button onclick="agregarCampo()">➕ Agregar campo</button>
+          <button onclick="guardarCambios('${id}', '${json.titulo}')">💾 Guardar Cambios</button>
+        `;
+
+        json.estructura.forEach(c => agregarCampo(c));
+
+      } catch (e) {
+        cont.innerText = "Error de conexión.";
+      }
+    }
+
+    function agregarCampo(campo = {}) {
+      const cont = document.getElementById("camposContainer");
+
+      const div = document.createElement("div");
+      div.className = "campo";
+
+      const opciones = campo.options ? campo.options.join("\n") : "";
+
+      div.innerHTML = `
+        <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+        <label>Nombre del campo:</label>
+        <input type="text" class="nombreCampo" value="${campo.label || ""}">
+
+        <label>Tipo de campo:</label>
+        <select class="tipoCampo" onchange="actualizarOpciones(this)">
+          <option value="">Seleccionar tipo</option>
+          <option value="text" ${campo.type === "text" ? "selected" : ""}>Texto</option>
+          <option value="number_entero" ${campo.format === "entero" ? "selected" : ""}>Número entero</option>
+          <option value="number_decimal" ${campo.format === "decimal" ? "selected" : ""}>Número decimal</option>
+          <option value="moneda" ${campo.isCurrency ? "selected" : ""}>Moneda</option>
+          <option value="select" ${campo.type === "select" ? "selected" : ""}>Lista desplegable</option>
+        </select>
+        <div class="opcionesExtra">
+          ${campo.type === "select" ? `<label>Opciones (una por línea):</label><textarea class="opcionesLista" rows="4">${opciones}</textarea>` : ""}
+        </div>
+      `;
+
+      cont.appendChild(div);
+    }
+
+    function actualizarOpciones(select) {
+      const opcionesDiv = select.parentElement.querySelector(".opcionesExtra");
+      const tipo = select.value;
+      opcionesDiv.innerHTML = "";
+
+      if (tipo === "select") {
+        opcionesDiv.innerHTML = `
+          <label>Opciones (una por línea):</label>
+          <textarea class="opcionesLista" rows="4"></textarea>
+        `;
+      }
+    }
+
+    async function guardarCambios(id, titulo) {
+      const campos = document.querySelectorAll(".campo");
+      const estructura = [];
+
+      campos.forEach(c => {
+        const label = c.querySelector(".nombreCampo").value.trim();
+        const tipo = c.querySelector(".tipoCampo").value;
+        if (!label || !tipo) return;
+
+        const obj = { label };
+        if (tipo === "number_entero") {
+          obj.type = "number";
+          obj.format = "entero";
+        } else if (tipo === "number_decimal") {
+          obj.type = "number";
+          obj.format = "decimal";
+        } else if (tipo === "moneda") {
+          obj.type = "number";
+          obj.isCurrency = true;
+        } else if (tipo === "select") {
+          obj.type = "select";
+          const opciones = c.querySelector(".opcionesLista").value.split("\n").map(o => o.trim()).filter(o => o);
+          obj.options = opciones;
+        } else {
+          obj.type = tipo;
+        }
+        estructura.push(obj);
+      });
+
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "guardarFormulario", id, titulo, estructura })
+        });
+        const json = await res.json();
+        if (json.status === "ok") {
+          alert("Formulario actualizado correctamente");
+        } else {
+          alert("Error al guardar cambios");
+        }
+      } catch (e) {
+        alert("Error al conectar con el servidor.");
+      }
+    }
+
+    async function eliminarFormulario(id) {
+      if (!confirm("¿Estás seguro de eliminar este formulario?")) return;
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "eliminarFormulario", id })
+        });
+        const json = await res.json();
+        if (json.status === "ok") {
+          alert("Formulario eliminado.");
+          location.reload();
+        } else {
+          alert("Error al eliminar");
+        }
+      } catch (e) {
+        alert("Error al conectar con el servidor.");
+      }
     }
 
     cargarFormularios();
   </script>
 </body>
 </html>
+
