@@ -1,49 +1,111 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Constructor de Formulario</title>
+  <title>Constructor de Formularios</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    .campo { border-bottom: 1px solid #ccc; padding: 10px 0; }
-    label { display: block; margin-top: 10px; }
-    input, select, textarea, button { padding: 8px; margin-top: 5px; width: 100%; box-sizing: border-box; }
-    .seccion-opciones { background: #f8f8f8; padding: 10px; margin-top: 10px; border-radius: 5px; }
-    .campo-opciones label { font-size: 14px; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #143757;
+      color: white;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #0f2a48;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .sidebar h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #ffffff;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      background: #1f4d7a;
+      color: white;
+      border: none;
+      margin-bottom: 10px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .main {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: none;
+    }
+    .campo {
+      background: #1f4d7a;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+    #modal {
+      background: #1f4d7a;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <h2>Crear nuevo formulario</h2>
-  <label>Título del formulario:
-    <input id="tituloForm" />
-  </label>
+  <div class="container">
+    <div class="sidebar">
+      <h3>Menú</h3>
+      <button onclick="location.href='constructor.html'">Formularios</button>
+      <button onclick="alert('Próximamente: configuración de colores y logo')">Configuración</button>
+    </div>
 
-  <div id="campos"></div>
+    <div class="main">
+      <h2>Crear nuevo formulario</h2>
 
-  <button onclick="abrirModalCampo()">+ Agregar campo</button>
-  <button onclick="guardarFormulario()">💾 Guardar formulario</button>
+      <label>Título del formulario:
+        <input id="tituloForm" />
+      </label>
 
-  <!-- Modal para agregar campo -->
-  <div id="modal" style="display:none; background:#fff; border:1px solid #ccc; padding:20px; margin-top:20px;">
-    <h3>Nuevo campo</h3>
-    <label>Etiqueta del campo:
-      <input id="nuevoLabel" />
-    </label>
+      <div id="campos"></div>
 
-    <label>Tipo de campo:
-      <select id="nuevoTipo" onchange="mostrarConfiguracionesTipo()">
-        <option value="">Seleccionar tipo</option>
-        <option value="text">Texto</option>
-        <option value="number">Número</option>
-        <option value="select">Lista desplegable</option>
-        <option value="textarea">Área de texto</option>
-        <option value="nuevo">+ Agregar nuevo tipo personalizado</option>
-      </select>
-    </label>
+      <button onclick="abrirModalCampo()">+ Agregar campo</button>
+      <button onclick="guardarFormulario()">💾 Guardar formulario</button>
 
-    <div id="configTipo" class="seccion-opciones"></div>
+      <!-- Modal para agregar campo -->
+      <div id="modal" style="display:none;">
+        <h3>Nuevo campo</h3>
+        <label>Etiqueta del campo:
+          <input id="nuevoLabel" />
+        </label>
 
-    <button onclick="confirmarCampo()">✔ Confirmar campo</button>
-    <button onclick="cerrarModal()">Cancelar</button>
+        <label>Tipo de campo:
+          <select id="nuevoTipo" onchange="mostrarConfiguracionesTipo()">
+            <option value="">Seleccionar tipo</option>
+            <option value="text">Texto</option>
+            <option value="number">Número</option>
+            <option value="select">Lista desplegable</option>
+            <option value="textarea">Área de texto</option>
+            <option value="nuevo">+ Agregar tipo personalizado</option>
+          </select>
+        </label>
+
+        <div id="configTipo"></div>
+
+        <button onclick="confirmarCampo()">✔ Confirmar campo</button>
+        <button onclick="cerrarModal()">Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -75,15 +137,13 @@
 
       if (tipo === "number") {
         configDiv.innerHTML = `
-          <div class="campo-opciones">
-            <label><input type="checkbox" id="esMoneda" /> ¿Es moneda?</label>
-            <label>Formato numérico:
-              <select id="formatoNumero">
-                <option value="entero">Entero</option>
-                <option value="decimal">Decimal</option>
-              </select>
-            </label>
-          </div>
+          <label><input type="checkbox" id="esMoneda" /> ¿Es moneda?</label>
+          <label>Formato:
+            <select id="formatoNumero">
+              <option value="entero">Entero</option>
+              <option value="decimal">Decimal</option>
+            </select>
+          </label>
         `;
       }
 
@@ -138,7 +198,7 @@
         const d = document.createElement("div");
         d.className = "campo";
         d.innerHTML = `
-          <strong>${i + 1}. ${c.label}</strong> (${c.type}) 
+          <strong>${i + 1}. ${c.label}</strong> (${c.type})
           ${c.options ? `<br><em>Opciones:</em> ${c.options.join(", ")}` : ""}
           ${c.type === "number" ? `<br><em>${c.isCurrency ? "Moneda" : "Número"}, ${c.format}</em>` : ""}
         `;
@@ -153,4 +213,25 @@
         return;
       }
 
-      const res = await fetch(urlW
+      const res = await fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "guardarFormulario",
+          titulo: titulo,
+          estructura: campos
+        }),
+      });
+
+      const json = await res.json();
+      if (json.status === "ok") {
+        alert("Formulario guardado con éxito. ID: " + json.id);
+        campos = [];
+        render();
+        document.getElementById("tituloForm").value = "";
+      } else {
+        alert("Error al guardar.");
+      }
+    }
+  </script>
+</body>
+</html>
