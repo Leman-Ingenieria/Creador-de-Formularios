@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Responder Formulario</title>
+  <title>Formulario</title>
   <style>
     body {
       font-family: sans-serif;
-      padding: 20px;
       max-width: 700px;
-      margin: auto;
+      margin: 20px auto;
+      padding: 10px;
     }
     label {
       display: block;
@@ -23,53 +23,49 @@
     button {
       margin-top: 20px;
       padding: 10px 15px;
-      cursor: pointer;
-    }
-    .moneda::before {
-      content: "$";
-      margin-right: 5px;
     }
   </style>
 </head>
 <body>
-  <h2>Responder Formulario</h2>
-
-  <form id="formulario" style="display:none;">
-    <div id="campos"></div>
-    <button type="submit">Enviar respuesta</button>
-  </form>
+  <h2 id="tituloFormulario">Formulario</h2>
+  <form id="formulario"></form>
+  <button id="enviarBtn" style="display:none;">Enviar respuesta</button>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    // Obtener el id del formulario desde la url
     function getQueryParam(param) {
       const params = new URLSearchParams(window.location.search);
       return params.get(param);
     }
 
-    async function cargarFormulario(id) {
-      try {
-        const res = await fetch(urlWebApp, {
-          method: "POST",
-          body: JSON.stringify({ action: "getFormulario", id })
-        });
-        const json = await res.json();
-        if (json.status !== "ok") {
-          alert("Formulario no encontrado.");
-          return;
-        }
-        const estructura = json.estructura;
-        const camposDiv = document.getElementById("campos");
-        camposDiv.innerHTML = "";
+    async function cargarFormulario() {
+      const id = getQueryParam("id");
+      if (!id) {
+        alert("No se especificó ningún formulario.");
+        return;
+      }
 
-        estructura.forEach(campo => {
-          const label = document.createElement("label");
-          label.textContent = campo.label;
+      const res = await fetch(`${urlWebApp}?action=getFormulario&id=${encodeURIComponent(id)}`);
+      const data = await res.json();
 
-          let input;
+      if (data.status !== "ok") {
+        alert("Formulario no encontrado.");
+        return;
+      }
 
-          if (campo.type === "select") {
+      document.getElementById("tituloFormulario").textContent = data.titulo;
+
+      const form = document.getElementById("formulario");
+      form.innerHTML = "";
+
+      data.estructura.forEach(campo => {
+        const label = document.createElement("label");
+        label.textContent = campo.label;
+
+        let input;
+        switch(campo.type) {
+          case "select":
             input = document.createElement("select");
             (campo.options || []).forEach(opt => {
               const option = document.createElement("option");
@@ -77,78 +73,62 @@
               option.textContent = opt;
               input.appendChild(option);
             });
-          } else if (campo.type === "textarea") {
+            break;
+          case "textarea":
             input = document.createElement("textarea");
             input.rows = 4;
-          } else if (campo.type === "number") {
+            break;
+          case "number":
             input = document.createElement("input");
             input.type = "number";
-            if (campo.format === "entero") input.step = "1";
-            else input.step = "0.01";
-            if (campo.isCurrency) {
-              input.classList.add("moneda");
-              input.placeholder = "$";
-            }
-          } else {
+            input.step = campo.format === "entero" ? "1" : "0.01";
+            if(campo.isCurrency) input.placeholder = "$";
+            break;
+          default:
             input = document.createElement("input");
             input.type = campo.type || "text";
-          }
+        }
 
-          input.name = campo.label;
-          input.required = true;
-          camposDiv.appendChild(label);
-          camposDiv.appendChild(input);
-        });
+        input.name = campo.label;
+        input.required = true;
 
-        document.getElementById("formulario").style.display = "block";
-      } catch {
-        alert("Error al cargar el formulario.");
-      }
-    }
-
-    document.getElementById("formulario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const id = getQueryParam("id");
-      if (!id) {
-        alert("No se especificó ningún formulario.");
-        return;
-      }
-
-      const datos = {};
-      const inputs = e.target.querySelectorAll("input, select, textarea");
-      inputs.forEach(input => {
-        datos[input.name] = input.value;
+        form.appendChild(label);
+        form.appendChild(input);
       });
 
-      const payload = {
-        action: "guardarRespuesta",
-        id,
-        datos
-      };
+      document.getElementById("enviarBtn").style.display = "inline-block";
+    }
+
+    async function enviarRespuesta() {
+      const id = getQueryParam("id");
+      const form = document.getElementById("formulario");
+      const inputs = form.querySelectorAll("input, select, textarea");
+
+      const datos = {};
+      inputs.forEach(i => {
+        datos[i.name] = i.value;
+      });
 
       const res = await fetch(urlWebApp, {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          action: "guardarRespuesta",
+          id,
+          datos
+        })
       });
 
       if (res.ok) {
         alert("Respuesta enviada correctamente. ¡Gracias!");
-        e.target.reset();
-        document.getElementById("formulario").style.display = "none";
+        window.close(); // o redirigir a alguna página si querés
       } else {
         alert("Error al enviar la respuesta.");
       }
-    });
+    }
 
-    // Al cargar la página, obtener id y cargar formulario
-    window.onload = () => {
-      const id = getQueryParam("id");
-      if (!id) {
-        alert("No se especificó ningún formulario.");
-        return;
-      }
-      cargarFormulario(id);
-    };
+    document.getElementById("enviarBtn").addEventListener("click", enviarRespuesta);
+
+    window.onload = cargarFormulario;
   </script>
 </body>
 </html>
