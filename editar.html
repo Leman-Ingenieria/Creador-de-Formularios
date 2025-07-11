@@ -30,17 +30,16 @@
           return;
         }
 
-        // Filtrar para excluir formularios con título "TÍTULO"
-        const formulariosFiltrados = json.formularios.filter(f => f.titulo !== "TÍTULO");
-
-        if (formulariosFiltrados.length === 0) {
+        if (json.formularios.length === 0) {
           contenedor.textContent = "No hay formularios creados.";
           return;
         }
 
         const lista = document.createElement("ul");
 
-        formulariosFiltrados.forEach(form => {
+        json.formularios.forEach(form => {
+          if (form.titulo.toUpperCase() === "TÍTULO") return; // ignorar ese
+
           const li = document.createElement("li");
           li.innerHTML = `
             <span>${form.titulo}</span>
@@ -65,11 +64,10 @@
     }
 
     function editarFormulario(id) {
-      window.open(`constructor.html?id=${id}`, "_blank");
+      window.location.href = `constructor.html?id=${id}`;
     }
 
     cargarFormularios();
   </script>
 </body>
 </html>
-
