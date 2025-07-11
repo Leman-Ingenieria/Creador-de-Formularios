@@ -24,13 +24,11 @@
       const select = document.getElementById("formSelect");
 
       if (json.status === "ok") {
-        // Ordenar alfabéticamente por título
         json.formularios.sort((a, b) => a.titulo.localeCompare(b.titulo));
-
         select.innerHTML = '<option value="">Seleccionar formulario...</option>';
         json.formularios.forEach(f => {
           const option = document.createElement("option");
-          option.value = f.id;
+          option.value = f.titulo;
           option.textContent = f.titulo;
           select.appendChild(option);
         });
@@ -40,13 +38,15 @@
     }
 
     document.getElementById("cargarForm").addEventListener("click", () => {
-      const formId = document.getElementById("formSelect").value;
-      if (!formId) {
+      const formSelect = document.getElementById("formSelect");
+      const nombreFormulario = formSelect.value;
+      if (!nombreFormulario) {
         alert("Seleccioná un formulario.");
         return;
       }
 
-      const url = `formulario.html?id=${encodeURIComponent(formId)}`;
+      const nombreURL = nombreFormulario.replace(/\s+/g, '-');
+      const url = `formulario.html?nombre=${encodeURIComponent(nombreURL)}`;
       window.open(url, '_blank');
     });
 
@@ -54,3 +54,4 @@
   </script>
 </body>
 </html>
+
