@@ -5,9 +5,7 @@
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     label { display: block; margin-top: 15px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-    button { margin-top: 20px; padding: 10px 15px; }
-    .moneda::before { content: "$"; margin-right: 5px; }
+    select, button { width: 100%; padding: 10px; margin-top: 10px; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -15,12 +13,7 @@
 
   <label for="formSelect">Seleccioná un formulario:</label>
   <select id="formSelect"><option>Cargando...</option></select>
-  <button id="cargarForm">Cargar formulario</button>
-
-  <form id="formulario" style="display:none;">
-    <div id="campos"></div>
-    <button type="submit">Enviar respuesta</button>
-  </form>
+  <button id="cargarForm">Abrir formulario</button>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
@@ -31,6 +24,9 @@
       const select = document.getElementById("formSelect");
 
       if (json.status === "ok") {
+        // Ordenar alfabéticamente por título
+        json.formularios.sort((a, b) => a.titulo.localeCompare(b.titulo));
+
         select.innerHTML = '<option value="">Seleccionar formulario...</option>';
         json.formularios.forEach(f => {
           const option = document.createElement("option");
@@ -43,95 +39,18 @@
       }
     }
 
-    window.onload = cargarListaFormularios;
-
-    document.getElementById("cargarForm").addEventListener("click", async () => {
+    document.getElementById("cargarForm").addEventListener("click", () => {
       const formId = document.getElementById("formSelect").value;
       if (!formId) {
         alert("Seleccioná un formulario.");
         return;
       }
 
-      const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(formId));
-      const json = await res.json();
-
-      if (json.status !== "ok") {
-        alert("Formulario no encontrado.");
-        return;
-      }
-
-      const estructura = json.estructura;
-      const camposDiv = document.getElementById("campos");
-      camposDiv.innerHTML = "";
-
-      estructura.forEach(campo => {
-        const label = document.createElement("label");
-        label.textContent = campo.label;
-
-        let input;
-        if (campo.type === "select") {
-          input = document.createElement("select");
-          (campo.options || []).forEach(opt => {
-            const option = document.createElement("option");
-            option.value = opt;
-            option.textContent = opt;
-            input.appendChild(option);
-          });
-        } else if (campo.type === "textarea") {
-          input = document.createElement("textarea");
-          input.rows = 4;
-        } else if (campo.type === "number") {
-          input = document.createElement("input");
-          input.type = "number";
-          input.step = campo.format === "entero" ? "1" : "0.01";
-          if (campo.isCurrency) {
-            input.classList.add("moneda");
-            input.placeholder = "$";
-          }
-        } else {
-          input = document.createElement("input");
-          input.type = campo.type || "text";
-        }
-
-        input.name = campo.label;
-        input.required = true;
-        camposDiv.appendChild(label);
-        camposDiv.appendChild(input);
-      });
-
-      document.getElementById("formulario").style.display = "block";
-      document.getElementById("formulario").dataset.formId = formId;
+      const url = `formulario.html?id=${encodeURIComponent(formId)}`;
+      window.open(url, '_blank');
     });
 
-    document.getElementById("formulario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formId = e.target.dataset.formId;
-
-      const datos = {};
-      const inputs = e.target.querySelectorAll("input, select, textarea");
-      inputs.forEach(input => {
-        datos[input.name] = input.value;
-      });
-
-      const payload = {
-        action: "guardarRespuesta",
-        id: formId,
-        datos: datos
-      };
-
-      const res = await fetch(urlWebApp, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        alert("Respuesta enviada correctamente. ¡Gracias!");
-        e.target.reset();
-        document.getElementById("formulario").style.display = "none";
-      } else {
-        alert("Error al enviar la respuesta.");
-      }
-    });
+    window.onload = cargarListaFormularios;
   </script>
 </body>
 </html>
