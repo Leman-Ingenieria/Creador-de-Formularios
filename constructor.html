@@ -71,7 +71,6 @@
       color: #666;
       margin-top: 15px;
     }
-    /* Scroll para main */
     main::-webkit-scrollbar {
       width: 8px;
     }
@@ -92,43 +91,27 @@
       <button id="btnVerEditar">Ver/Editar</button>
       <button id="btnNuevoFormulario">Nuevo Formulario</button>
     </div>
-    <!-- Aquí podés agregar más menús como Configuración si querés -->
   </nav>
 
   <main>
     <h1>Entorno de Trabajo</h1>
-
-    <div id="contenido">
-
-      <!-- Contenido dinámico se inserta aquí -->
-
-    </div>
+    <div id="contenido"></div>
   </main>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    // Variables globales
     let formularios = [];
     let formularioSeleccionado = null;
 
-    // Menú desplegable
     document.getElementById("btnFormularios").addEventListener("click", () => {
       const submenu = document.getElementById("submenuFormularios");
       submenu.classList.toggle("show");
     });
 
-    // Botón Ver/Editar
-    document.getElementById("btnVerEditar").addEventListener("click", () => {
-      mostrarListaFormularios();
-    });
+    document.getElementById("btnVerEditar").addEventListener("click", mostrarListaFormularios);
+    document.getElementById("btnNuevoFormulario").addEventListener("click", mostrarFormularioNuevo);
 
-    // Botón Nuevo Formulario
-    document.getElementById("btnNuevoFormulario").addEventListener("click", () => {
-      mostrarFormularioNuevo();
-    });
-
-    // Función para obtener todos los formularios
     async function obtenerFormularios() {
       try {
         const res = await fetch(urlWebApp + "?action=getFormularios");
@@ -136,10 +119,9 @@
         if (json.status === "ok") {
           formularios = json.formularios.sort((a, b) => a.titulo.localeCompare(b.titulo));
           return formularios;
-        } else {
-          formularios = [];
-          return [];
         }
+        formularios = [];
+        return [];
       } catch (e) {
         console.error("Error al obtener formularios:", e);
         formularios = [];
@@ -147,7 +129,6 @@
       }
     }
 
-    // Mostrar lista desplegable para seleccionar formulario a ver/editar/eliminar
     async function mostrarListaFormularios() {
       formularioSeleccionado = null;
       const contenido = document.getElementById("contenido");
@@ -169,7 +150,6 @@
         return;
       }
 
-      // Opciones select
       formulariosList.forEach(f => {
         const option = document.createElement("option");
         option.value = f.id;
@@ -180,7 +160,6 @@
       formList.appendChild(select);
       contenido.appendChild(formList);
 
-      // Botones Ver, Editar, Eliminar
       const divBotones = document.createElement("div");
       divBotones.className = "botones-accion";
 
@@ -212,14 +191,12 @@
 
       contenido.appendChild(divBotones);
 
-      // Guardar formulario seleccionado
       select.addEventListener("change", (e) => {
         formularioSeleccionado = e.target.value;
       });
       formularioSeleccionado = select.value;
     }
 
-    // Mostrar formulario para crear uno nuevo
     function mostrarFormularioNuevo() {
       formularioSeleccionado = null;
       const contenido = document.getElementById("contenido");
@@ -228,19 +205,15 @@
         <label>Título del formulario:
           <input type="text" id="tituloForm" />
         </label>
-
         <div id="campos"></div>
-
         <button id="btnAgregarCampo">+ Agregar campo</button>
         <button id="btnGuardarFormulario">💾 Guardar formulario</button>
 
-        <!-- Modal para agregar campo -->
         <div id="modal" style="display:none; background:#fff; border:1px solid #ccc; padding:20px; margin-top:20px;">
           <h3>Nuevo campo</h3>
           <label>Etiqueta del campo:
             <input id="nuevoLabel" />
           </label>
-
           <label>Tipo de campo:
             <select id="nuevoTipo" onchange="mostrarConfiguracionesTipo()">
               <option value="">Seleccionar tipo</option>
@@ -251,18 +224,15 @@
               <option value="nuevo">+ Agregar nuevo tipo personalizado</option>
             </select>
           </label>
-
           <div id="configTipo" class="seccion-opciones"></div>
-
           <button id="btnConfirmarCampo">✔ Confirmar campo</button>
           <button id="btnCerrarModal">Cancelar</button>
         </div>
       `;
 
-      // Variables y funciones para el formulario nuevo
       const campos = [];
 
-      function mostrarConfiguracionesTipo() {
+      window.mostrarConfiguracionesTipo = function() {
         const tipo = document.getElementById("nuevoTipo").value;
         const configDiv = document.getElementById("configTipo");
         configDiv.innerHTML = "";
@@ -273,7 +243,6 @@
             <textarea id="opcionesSelect" rows="4"></textarea>
           `;
         }
-
         if (tipo === "number") {
           configDiv.innerHTML = `
             <div class="campo-opciones">
@@ -287,7 +256,6 @@
             </div>
           `;
         }
-
         if (tipo === "nuevo") {
           const nuevo = prompt("Ingresá el nuevo tipo personalizado:");
           if (nuevo && nuevo.trim() !== "") {
@@ -317,8 +285,6 @@
           `;
           div.appendChild(d);
         });
-
-        // Agregar event listener para eliminar campo
         document.querySelectorAll(".btnEliminarCampo").forEach(btn => {
           btn.onclick = (e) => {
             const idx = parseInt(e.target.getAttribute("data-index"));
@@ -328,7 +294,6 @@
         });
       }
 
-      // Agregar campo nuevo
       document.getElementById("btnAgregarCampo").onclick = () => {
         document.getElementById("modal").style.display = "block";
         document.getElementById("nuevoLabel").value = "";
@@ -336,169 +301,12 @@
         document.getElementById("configTipo").innerHTML = "";
       };
 
-      document.getElementById("nuevoTipo").addEventListener("change", mostrarConfiguracionesTipo);
-
       document.getElementById("btnConfirmarCampo").onclick = () => {
         const label = document.getElementById("nuevoLabel").value.trim();
         const tipo = document.getElementById("nuevoTipo").value;
-
         if (!label || !tipo) {
           alert("Completá todos los campos.");
           return;
         }
-
         const nuevoCampo = { label, type: tipo };
-
-        if (tipo === "select") {
-          const opciones = document.getElementById("opcionesSelect").value
-            .split("\n")
-            .map(o => o.trim())
-            .filter(o => o !== "");
-          nuevoCampo.options = opciones;
-        }
-
-        if (tipo === "number") {
-          nuevoCampo.isCurrency = document.getElementById("esMoneda").checked;
-          nuevoCampo.format = document.getElementById("formatoNumero").value;
-        }
-
-        campos.push(nuevoCampo);
-        renderCampos();
-        document.getElementById("modal").style.display = "none";
-      };
-
-      document.getElementById("btnCerrarModal").onclick = () => {
-        document.getElementById("modal").style.display = "none";
-      };
-
-      // Guardar formulario
-      document.getElementById("btnGuardarFormulario").onclick = async () => {
-        const titulo = document.getElementById("tituloForm").value.trim();
-        if (!titulo) {
-          alert("El formulario debe tener un título.");
-          return;
-        }
-        if (campos.length === 0) {
-          alert("Agregá al menos un campo.");
-          return;
-        }
-
-        try {
-          const res = await fetch(urlWebApp, {
-            method: "POST",
-            body: JSON.stringify({
-              action: "guardarFormulario",
-              titulo,
-              estructura: campos
-            }),
-          });
-          const json = await res.json();
-          if (json.status === "ok") {
-            alert("Formulario guardado con éxito.");
-            mostrarListaFormularios();
-          } else {
-            alert("Error al guardar formulario.");
-          }
-        } catch (e) {
-          alert("Error al guardar formulario.");
-          console.error(e);
-        }
-      };
-    }
-
-    // Mostrar formulario para editar uno existente
-    async function mostrarFormularioEditar(id) {
-      const contenido = document.getElementById("contenido");
-      contenido.innerHTML = "<h2>Editar formulario</h2>";
-
-      try {
-        const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(id));
-        const json = await res.json();
-        if (json.status !== "ok") {
-          contenido.innerHTML += "<p>No se pudo cargar el formulario.</p>";
-          return;
-        }
-
-        const formulario = json;
-        let estructura = formulario.estructura || [];
-        if (typeof estructura === "string") estructura = JSON.parse(estructura);
-
-        let campos = estructura.slice();
-
-        contenido.innerHTML += `
-          <label>Título del formulario:
-            <input type="text" id="tituloFormEditar" value="${formulario.titulo}" />
-          </label>
-          <div id="camposEditar"></div>
-          <button id="btnAgregarCampoEditar">+ Agregar campo</button>
-          <button id="btnGuardarEdicion">Guardar cambios</button>
-          <button id="btnCancelarEdicion">Cancelar</button>
-
-          <!-- Modal editar campo -->
-          <div id="modalEditarCampo" style="display:none; background:#fff; border:1px solid #ccc; padding:20px; margin-top:20px;">
-            <h3>Editar campo</h3>
-            <label>Etiqueta del campo:
-              <input id="editarLabel" />
-            </label>
-
-            <label>Tipo de campo:
-              <select id="editarTipo" onchange="mostrarConfiguracionesTipoEditar()">
-                <option value="">Seleccionar tipo</option>
-                <option value="text">Texto</option>
-                <option value="number">Número</option>
-                <option value="select">Lista desplegable</option>
-                <option value="textarea">Área de texto</option>
-                <option value="nuevo">+ Agregar nuevo tipo personalizado</option>
-              </select>
-            </label>
-
-            <div id="configTipoEditar" class="seccion-opciones"></div>
-
-            <button id="btnConfirmarCampoEditar">✔ Confirmar campo</button>
-            <button id="btnCerrarModalEditar">Cancelar</button>
-          </div>
-        `;
-
-        function mostrarConfiguracionesTipoEditar() {
-          const tipo = document.getElementById("editarTipo").value;
-          const configDiv = document.getElementById("configTipoEditar");
-          configDiv.innerHTML = "";
-
-          if (tipo === "select") {
-            configDiv.innerHTML = `
-              <label>Opciones (una por línea):</label>
-              <textarea id="opcionesSelectEditar" rows="4"></textarea>
-            `;
-          }
-
-          if (tipo === "number") {
-            configDiv.innerHTML = `
-              <div class="campo-opciones">
-                <label><input type="checkbox" id="esMonedaEditar" /> ¿Es moneda?</label>
-                <label>Formato numérico:
-                  <select id="formatoNumeroEditar">
-                    <option value="entero">Entero</option>
-                    <option value="decimal">Decimal</option>
-                  </select>
-                </label>
-              </div>
-            `;
-          }
-
-          if (tipo === "nuevo") {
-            const nuevo = prompt("Ingresá el nuevo tipo personalizado:");
-            if (nuevo && nuevo.trim() !== "") {
-              const select = document.getElementById("editarTipo");
-              const opt = document.createElement("option");
-              opt.value = nuevo.trim();
-              opt.textContent = nuevo.trim();
-              select.appendChild(opt);
-              select.value = nuevo.trim();
-            } else {
-              document.getElementById("editarTipo").value = "";
-            }
-          }
-        }
-
-        function renderCamposEditar() {
-          const div
+        if (tipo === "select
