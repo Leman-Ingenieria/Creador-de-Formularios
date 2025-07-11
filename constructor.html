@@ -1,139 +1,388 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+  <meta charset="UTF-8" />
   <title>Constructor de Formularios</title>
   <style>
     body {
-      margin: 0;
-      display: flex;
-      font-family: sans-serif;
+      margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh;
+      background: #f0f0f0;
+      color: #333;
     }
-    aside {
+    #menuLateral {
       width: 220px;
-      background-color: #143757;
+      background: #143757;
       color: white;
-      height: 100vh;
-      padding: 20px;
-      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 10px;
     }
-    main {
-      flex: 1;
-      padding: 20px;
-      background-color: #f5f5f5;
+    #menuLateral h2 {
+      margin: 0 0 15px 10px;
+      font-weight: normal;
+      font-size: 20px;
     }
-    h2 {
+    #menuLateral button {
+      background: none;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      text-align: left;
+      font-size: 16px;
+      cursor: pointer;
+      outline: none;
+      width: 100%;
+    }
+    #menuLateral button:hover, #menuLateral button:focus {
+      background: #0f2c56;
+    }
+    #submenuFormularios {
+      display: none;
+      flex-direction: column;
+      margin-left: 15px;
+    }
+    #submenuFormularios button {
+      font-size: 14px;
+      padding-left: 25px;
+      margin-top: 3px;
+      background: #1a457f;
+    }
+    #entornoTrabajo {
+      flex-grow: 1;
+      padding: 20px 40px;
+      background: white;
+      overflow-y: auto;
+    }
+    #entornoTrabajo h1 {
       text-align: center;
+      margin-top: 0;
+      color: #143757;
     }
-    button, select, input, textarea {
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #143757;
+    }
+    input, select, textarea, button {
+      margin-top: 5px;
       padding: 8px;
-      margin: 5px 0;
       width: 100%;
       box-sizing: border-box;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
     }
-    .form-list select {
-      width: calc(100% - 10px);
+    #botonesAccion button {
+      padding: 5px 12px;
+      margin-right: 7px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 3px;
+      border: 1px solid transparent;
+      transition: background-color 0.3s;
+    }
+    #botonesAccion {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+    }
+    #botonesAccion button:hover {
+      opacity: 0.85;
+    }
+    #botonesAccion .btn-ver {
+      background: #2a72d8;
+      color: white;
+      border-color: #1e57b5;
+    }
+    #botonesAccion .btn-editar {
+      background: #f0ad4e;
+      color: black;
+      border-color: #d08b23;
+    }
+    #botonesAccion .btn-eliminar {
+      background: #d9534f;
+      color: white;
+      border-color: #b23935;
+    }
+    #formularioEditor {
+      margin-top: 20px;
+      background: #e9f0fc;
+      padding: 15px 20px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(20,55,87,0.15);
+      display: none;
+    }
+    .campo {
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+    }
+    /* Modal estilos */
+    #modal {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 1px solid #ccc;
+      padding: 20px;
+      z-index: 1000;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 0 0 15px rgba(0,0,0,0.25);
+      border-radius: 6px;
+    }
+    #modal h3 {
+      margin-top: 0;
+    }
+    #overlay {
+      display: none;
+      position: fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.5);
+      z-index: 900;
     }
   </style>
 </head>
 <body>
-  <aside>
-    <h3>Menú</h3>
-    <div>
-      <button onclick="toggleSubmenu()">Formularios ▼</button>
-      <div id="submenu" style="margin-left: 10px; display: none;">
-        <button onclick="mostrarVista('verEditar')">Ver/Editar</button>
-        <button onclick="mostrarVista('nuevo')">Nuevo</button>
+  <div id="menuLateral">
+    <h2>Menú</h2>
+    <button id="btnFormularios">Formularios ▼</button>
+    <div id="submenuFormularios">
+      <button id="btnVerEditar">Ver/Editar</button>
+      <button id="btnNuevo">Nuevo</button>
+    </div>
+  </div>
+
+  <main id="entornoTrabajo">
+    <h1>Entorno de Trabajo</h1>
+
+    <!-- Sección para seleccionar formulario -->
+    <div id="selectorFormulariosContainer" style="display:none;">
+      <label for="selectorFormularios">Seleccionar formulario:</label>
+      <select id="selectorFormularios"></select>
+
+      <div id="botonesAccion" style="display:none;">
+        <button class="btn-ver" onclick="verFormulario()">Ver</button>
+        <button class="btn-editar" onclick="editarFormulario()">Editar</button>
+        <button class="btn-eliminar" onclick="eliminarFormulario()">Eliminar</button>
       </div>
     </div>
-    <div style="margin-top: 20px;">
-      <button disabled>Configuración ⚙️<br><small>(próximamente)</small></button>
-    </div>
-  </aside>
 
-  <main>
-    <h2>Entorno de Trabajo</h2>
-    <div id="contenedor"></div>
+    <!-- Editor de formulario -->
+    <div id="formularioEditor">
+      <label>Título del formulario:
+        <input type="text" id="tituloForm" />
+      </label>
+      <div id="campos"></div>
+      <button onclick="abrirModalCampo()">+ Agregar campo</button>
+      <button onclick="guardarFormulario()">Guardar formulario</button>
+    </div>
   </main>
+
+  <!-- Modal para agregar campo -->
+  <div id="modal">
+    <h3>Nuevo campo</h3>
+    <label>Etiqueta del campo:
+      <input id="nuevoLabel" />
+    </label>
+
+    <label>Tipo de campo:
+      <select id="nuevoTipo" onchange="mostrarConfiguracionesTipo()">
+        <option value="">Seleccionar tipo</option>
+        <option value="text">Texto</option>
+        <option value="number">Número</option>
+        <option value="select">Lista desplegable</option>
+        <option value="textarea">Área de texto</option>
+        <option value="nuevo">+ Agregar nuevo tipo personalizado</option>
+      </select>
+    </label>
+
+    <div id="configTipo" class="seccion-opciones" style="margin-top:10px;"></div>
+
+    <button onclick="confirmarCampo()">✔ Confirmar campo</button>
+    <button onclick="cerrarModal()">Cancelar</button>
+  </div>
+  <div id="overlay"></div>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
-    const contenedor = document.getElementById("contenedor");
 
-    function toggleSubmenu() {
-      const submenu = document.getElementById("submenu");
-      submenu.style.display = submenu.style.display === "none" ? "block" : "none";
-    }
+    // Variables globales
+    let campos = [];
+    let listaFormularios = [];
 
-    function mostrarVista(vista) {
-      contenedor.innerHTML = "";
-      if (vista === "verEditar") {
-        mostrarVerEditar();
-      } else if (vista === "nuevo") {
-        mostrarNuevoFormulario();
-      }
-    }
+    // Manejo del menú lateral: desplegar submenú
+    document.getElementById("btnFormularios").addEventListener("click", () => {
+      const submenu = document.getElementById("submenuFormularios");
+      submenu.style.display = submenu.style.display === "flex" ? "none" : "flex";
+      submenu.style.flexDirection = "column";
+    });
 
-    async function mostrarVerEditar() {
-      contenedor.innerHTML = "<p>Cargando formularios...</p>";
-      const res = await fetch(urlWebApp + "?action=listarFormularios");
-      const json = await res.json();
+    // Botones menú
+    document.getElementById("btnNuevo").addEventListener("click", () => {
+      mostrarNuevoFormulario();
+    });
 
-      if (json.status === "ok") {
-        const select = document.createElement("select");
-        select.id = "formSelector";
-        json.formularios.forEach(f => {
-          const opt = document.createElement("option");
-          opt.value = f.id;
-          opt.textContent = f.titulo;
-          select.appendChild(opt);
+    document.getElementById("btnVerEditar").addEventListener("click", () => {
+      mostrarSelectorFormularios();
+    });
+
+    // Carga la lista de formularios y muestra selector con botones
+    async function cargarFormularios() {
+      try {
+        const res = await fetch(urlWebApp + "?action=getFormularios");
+        const data = await res.json();
+
+        listaFormularios = data.formularios || [];
+
+        const selector = document.getElementById("selectorFormularios");
+        selector.innerHTML = "";
+
+        if (listaFormularios.length === 0) {
+          const option = document.createElement("option");
+          option.textContent = "No existen formularios. Crea el primero.";
+          option.value = "";
+          selector.appendChild(option);
+          document.getElementById("botonesAccion").style.display = "none";
+          return;
+        }
+
+        listaFormularios.sort((a, b) => a.titulo.localeCompare(b.titulo));
+
+        listaFormularios.forEach(f => {
+          const option = document.createElement("option");
+          option.value = f.id;
+          option.textContent = f.titulo;
+          selector.appendChild(option);
         });
 
-        const verBtn = document.createElement("button");
-        verBtn.textContent = "Ver";
-        verBtn.onclick = () => {
-          const id = select.value;
-          window.open(`formulario.html?id=${id}`, "_blank");
-        };
-
-        const editarBtn = document.createElement("button");
-        editarBtn.textContent = "Editar";
-        editarBtn.onclick = () => {
-          const id = select.value;
-          window.location.href = `editar.html?id=${id}`;
-        };
-
-        const eliminarBtn = document.createElement("button");
-        eliminarBtn.textContent = "Eliminar";
-        eliminarBtn.onclick = async () => {
-          if (confirm("¿Estás seguro que deseas eliminar este formulario? Esta acción no se puede deshacer.")) {
-            const id = select.value;
-            const res = await fetch(urlWebApp, {
-              method: "POST",
-              body: JSON.stringify({ action: "eliminarFormulario", id }),
-            });
-            const json = await res.json();
-            if (json.status === "ok") {
-              alert("Formulario eliminado.");
-              mostrarVerEditar();
-            } else {
-              alert("Error al eliminar.");
-            }
-          }
-        };
-
-        contenedor.innerHTML = "";
-        contenedor.appendChild(select);
-        contenedor.appendChild(verBtn);
-        contenedor.appendChild(editarBtn);
-        contenedor.appendChild(eliminarBtn);
-      } else {
-        contenedor.innerHTML = "<p>Error al cargar formularios.</p>";
+        document.getElementById("botonesAccion").style.display = "flex";
+      } catch (e) {
+        alert("Error al cargar formularios.");
       }
     }
 
-    function mostrarNuevoFormulario() {
-      window.location.href = "constructor.html";
+    // Mostrar selector y botones (Ver/Editar/Eliminar)
+    function mostrarSelectorFormularios() {
+      cargarFormularios();
+      document.getElementById("selectorFormulariosContainer").style.display = "block";
+      document.getElementById("formularioEditor").style.display = "none";
+      document.getElementById("botonesAccion").style.display = "none";
     }
-  </script>
-</body>
-</html>
+
+    // Mostrar entorno para crear nuevo formulario
+    function mostrarNuevoFormulario() {
+      document.getElementById("formularioEditor").style.display = "block";
+      document.getElementById("selectorFormulariosContainer").style.display = "none";
+      campos = [];
+      document.getElementById("tituloForm").value = "";
+      document.getElementById("campos").innerHTML = "";
+    }
+
+    // Al seleccionar formulario en el selector, mostrar botones
+    document.getElementById("selectorFormularios").addEventListener("change", () => {
+      const val = document.getElementById("selectorFormularios").value;
+      document.getElementById("botonesAccion").style.display = val ? "flex" : "none";
+      // Oculta editor si estaba abierto
+      document.getElementById("formularioEditor").style.display = "none";
+    });
+
+    // Función para abrir formulario para ver (en nueva pestaña)
+    function verFormulario() {
+      const id = document.getElementById("selectorFormularios").value;
+      if (!id) return alert("Seleccioná un formulario para ver.");
+      window.open(`formulario.html?id=${encodeURIComponent(id)}`, "_blank");
+    }
+
+    // Función para cargar formulario para editar y mostrar editor
+    async function editarFormulario() {
+      const id = document.getElementById("selectorFormularios").value;
+      if (!id) return alert("Seleccioná un formulario para editar.");
+
+      const res = await fetch(urlWebApp + `?action=getFormulario&id=${encodeURIComponent(id)}`);
+      const json = await res.json();
+
+      if (json.status !== "ok") {
+        alert("No se pudo cargar el formulario.");
+        return;
+      }
+
+      campos = json.estructura || [];
+      document.getElementById("tituloForm").value = json.titulo || "";
+      renderCampos();
+      document.getElementById("formularioEditor").style.display = "block";
+      document.getElementById("selectorFormulariosContainer").style.display = "none";
+      document.getElementById("botonesAccion").style.display = "none";
+    }
+
+    // Función para eliminar formulario con confirmación
+    function eliminarFormulario() {
+      const id = document.getElementById("selectorFormularios").value;
+      if (!id) return alert("Seleccioná un formulario para eliminar.");
+      if (!confirm("¿Seguro que deseas eliminar este formulario? Esta acción no se puede deshacer.")) return;
+
+      fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({ action: "eliminarFormulario", id }),
+      })
+        .then(res => res.json())
+        .then(json => {
+          if (json.status === "ok") {
+            alert("Formulario eliminado.");
+            cargarFormularios();
+          } else {
+            alert("Error al eliminar formulario.");
+          }
+        })
+        .catch(() => alert("Error al eliminar formulario."));
+    }
+
+    // Modal para agregar campos
+    function abrirModalCampo() {
+      document.getElementById("modal").style.display = "block";
+      document.getElementById("overlay").style.display = "block";
+      document.getElementById("nuevoLabel").value = "";
+      document.getElementById("nuevoTipo").value = "";
+      document.getElementById("configTipo").innerHTML = "";
+    }
+    function cerrarModal() {
+      document.getElementById("modal").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
+    function mostrarConfiguracionesTipo() {
+      const tipo = document.getElementById("nuevoTipo").value;
+      const configDiv = document.getElementById("configTipo");
+      configDiv.innerHTML = "";
+
+      if (tipo === "select") {
+        configDiv.innerHTML = `
+          <label>Opciones (una por línea):</label>
+          <textarea id="opcionesSelect" rows="4"></textarea>
+        `;
+      } else if (tipo === "number") {
+        configDiv.innerHTML = `
+          <label><input type="checkbox" id="esMoneda" /> ¿Es moneda?</label>
+          <label>Formato numérico:
+            <select id="formatoNumero">
+              <option value="entero">Entero</option>
+              <option value="decimal">Decimal</option>
+            </select>
+          </label>
+        `;
+      } else if (tipo === "nuevo") {
+        const nuevo = prompt("Ingresá el nuevo tipo personalizado:");
+        if (nuevo && nuevo.trim() !== "") {
+          const select = document.getElementById("nuevoTipo");
+          const opt = document.createElement("option");
+          opt.value = nuevo.trim();
+          opt.textContent = nuevo.trim();
+          select.appendChild(opt);
+          select.value = nuevo.trim();
+        } else {
+          document.getElementById("nuevoTipo").value = "";
+        }
+      }
+    }
+    function confirmarCampo() {
+      const label = document.getElementById("nuevo
