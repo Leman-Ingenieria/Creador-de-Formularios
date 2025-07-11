@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Formulario</title>
+  <title>Responder Formulario</title>
   <meta charset="UTF-8" />
   <style>
     body {
       background-color: #143757;
       color: white;
       font-family: sans-serif;
-      padding: 20px;
       max-width: 700px;
       margin: auto;
+      padding: 20px;
     }
     h2 {
       text-align: center;
@@ -20,9 +20,7 @@
       margin-top: 15px;
       font-weight: bold;
     }
-    input,
-    select,
-    textarea {
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       margin-top: 5px;
@@ -35,15 +33,11 @@
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 16px;
-      background-color: #ffffff;
+      background-color: white;
       color: #143757;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-    }
-    .moneda::before {
-      content: "$";
-      margin-right: 5px;
     }
   </style>
 </head>
@@ -56,28 +50,23 @@
   </form>
 
   <script>
-    const urlWebApp =
-      "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
+    const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
     const params = new URLSearchParams(window.location.search);
     const formId = params.get("id");
 
     if (!formId) {
-      document.getElementById("tituloFormulario").textContent =
-        "❌ Error: No se especificó ningún formulario.";
+      document.getElementById("tituloFormulario").textContent = "❌ Error: No se especificó ningún formulario.";
     } else {
       cargarFormulario(formId);
     }
 
     async function cargarFormulario(id) {
-      const res = await fetch(
-        urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(id)
-      );
+      const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(id));
       const json = await res.json();
 
       if (json.status !== "ok") {
-        document.getElementById("tituloFormulario").textContent =
-          "❌ Formulario no encontrado.";
+        document.getElementById("tituloFormulario").textContent = "❌ Formulario no encontrado.";
         return;
       }
 
@@ -87,12 +76,44 @@
       const camposDiv = document.getElementById("campos");
       camposDiv.innerHTML = "";
 
-      estructura.forEach((campo) => {
+      estructura.forEach(campo => {
         const label = document.createElement("label");
         label.textContent = campo.label;
 
         let input;
+        switch(campo.type){
+          case "select":
+            input = document.createElement("select");
+            campo.options.forEach(o => {
+              const option = document.createElement("option");
+              option.value = o;
+              option.textContent = o;
+              input.appendChild(option);
+            });
+            break;
+          case "textarea":
+            input = document.createElement("textarea");
+            break;
+          case "number":
+            input = document.createElement("input");
+            input.type = "number";
+            break;
+          default:
+            input = document.createElement("input");
+            input.type = "text";
+        }
+        input.name = campo.label;
+        label.appendChild(input);
+        camposDiv.appendChild(label);
+      });
 
-        if (campo.type === "select") {
-          input = document.createElement("select");
-          (
+      document.getElementById("formulario").style.display = "block";
+    }
+
+    document.getElementById("formulario").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const respuesta = {};
+      formData.forEach((value, key)
+
