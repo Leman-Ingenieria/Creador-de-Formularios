@@ -4,84 +4,49 @@
   <title>Seleccionar formulario</title>
   <style>
     body {
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 700px;
-      margin: auto;
       background-color: #143757;
       color: white;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
+      font-family: sans-serif;
+      padding: 30px;
+      text-align: center;
     }
     select, button {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      box-sizing: border-box;
+      padding: 10px;
       font-size: 16px;
-    }
-    button {
-      cursor: pointer;
-      background-color: #0a2540;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      margin-top: 20px;
-    }
-    button:hover {
-      background-color: #062138;
+      width: 80%;
+      margin: 10px auto;
+      display: block;
     }
   </style>
 </head>
 <body>
   <h2>Seleccionar formulario</h2>
-
-  <label for="selectForm">Formularios disponibles:</label>
-  <select id="selectForm">
-    <option value="">-- Seleccione un formulario --</option>
+  <select id="formSelector">
+    <option value="">Cargando formularios...</option>
   </select>
-  <button id="abrirForm" disabled>Abrir formulario</button>
+  <button onclick="abrirFormulario()">Abrir formulario</button>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    async function cargarFormularios() {
-      try {
-        const res = await fetch(urlWebApp + "?action=listarFormularios");
-        const json = await res.json();
-        if (json.status === "ok") {
-          const select = document.getElementById("selectForm");
-          json.formularios.sort((a,b) => a.titulo.localeCompare(b.titulo));
-          json.formularios.forEach(f => {
-            const option = document.createElement("option");
-            option.value = f.id;
-            option.textContent = f.titulo;
-            select.appendChild(option);
-          });
-        } else {
-          alert("Error al cargar los formularios");
-        }
-      } catch (e) {
-        alert("Error en la conexión");
-      }
+    fetch(urlWebApp + "?action=listarFormularios")
+      .then(r => r.json())
+      .then(data => {
+        const select = document.getElementById("formSelector");
+        select.innerHTML = "";
+        data.formularios.forEach(f => {
+          const opt = document.createElement("option");
+          opt.value = f.id;
+          opt.textContent = f.titulo;
+          select.appendChild(opt);
+        });
+      });
+
+    function abrirFormulario() {
+      const id = document.getElementById("formSelector").value;
+      if (!id) return alert("Seleccioná un formulario.");
+      window.open(`formulario.html?id=${id}`, "_blank");
     }
-
-    document.getElementById("selectForm").addEventListener("change", function() {
-      document.getElementById("abrirForm").disabled = this.value === "";
-    });
-
-    document.getElementById("abrirForm").addEventListener("click", () => {
-      const id = document.getElementById("selectForm").value;
-      if (id) {
-        // Abrir en nueva pestaña el formulario para responder
-        window.open(`formulario.html?id=${encodeURIComponent(id)}`, "_blank");
-      }
-    });
-
-    cargarFormularios();
   </script>
 </body>
 </html>
