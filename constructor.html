@@ -17,182 +17,254 @@
       background: #0e2a53;
     }
     nav .submenu {
-      display: none; flex-direction: column; background: #1e4277;
+      display: none; flex-direction: column;
+      background: #1e4277;
     }
     nav .submenu.show {
       display: flex;
     }
     main {
-      flex: 1; padding: 20px; overflow-y: auto; background: white;
+      flex: 1; padding: 20px; overflow-y: auto;
+      background: white; box-sizing: border-box;
     }
     h1 {
       text-align: center; margin-top: 0; margin-bottom: 20px;
     }
-    .campo {
-      margin-bottom: 10px;
-      padding: 10px;
+    .formulario-lista {
+      margin-bottom: 15px;
+    }
+    select {
+      padding: 6px; font-size: 16px; width: 100%; max-width: 400px;
+    }
+    .botones-accion {
+      margin-top: 10px;
+    }
+    .botones-accion button {
+      margin-right: 10px; padding: 6px 12px; font-size: 14px; cursor: pointer;
+    }
+    .nuevo-formulario, .editar-formulario {
+      max-width: 600px;
       border: 1px solid #ccc;
-      border-radius: 5px;
-      position: relative;
+      padding: 15px;
+      border-radius: 6px;
     }
-    .campo .eliminar {
-      position: absolute;
-      top: 5px;
-      right: 10px;
-      cursor: pointer;
-      color: red;
-      font-weight: bold;
+    .campo {
+      display: flex; align-items: center; margin-top: 10px;
+      border-bottom: 1px solid #ddd; padding-bottom: 5px;
     }
-    .campo label {
-      display: block;
-      margin-top: 10px;
-    }
-    select, input, textarea {
-      width: 100%;
+    .campo input[type="text"], .campo select, .campo textarea {
+      margin-right: 10px;
       padding: 6px;
-      margin-top: 5px;
-      box-sizing: border-box;
+      font-size: 14px;
+      flex-grow: 1;
     }
-    #camposContainer {
-      max-width: 500px;
-      margin-top: 20px;
+    .campo textarea {
+      resize: vertical;
+      min-height: 40px;
     }
-    button {
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 16px;
+    .campo .btnEliminarCampo {
+      background: #c00; color: white; border: none; cursor: pointer; padding: 4px 8px; font-weight: bold; border-radius: 3px;
+    }
+    .mensaje {
+      font-style: italic;
+      color: #666;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
+
   <nav>
     <button id="btnFormularios">Formularios ▾</button>
     <div id="submenuFormularios" class="submenu">
       <button id="btnVerEditar">Ver/Editar</button>
-      <button id="btnNuevoFormulario">Nuevo Formulario</button>
+      <button id="btnNuevoFormulario">Nuevo formulario</button>
     </div>
   </nav>
 
   <main>
     <h1>Entorno de Trabajo</h1>
-    <div id="contenido"></div>
+
+    <div id="contenido">
+      <!-- Aquí se carga el contenido dinámico -->
+    </div>
   </main>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    document.getElementById("btnFormularios").onclick = () => {
+    let formularios = [];
+    let formularioSeleccionado = null;
+    let modoEdicion = false;
+    let campos = [];
+
+    // Toggle submenu
+    document.getElementById("btnFormularios").addEventListener("click", () => {
       document.getElementById("submenuFormularios").classList.toggle("show");
-    };
+    });
 
-    document.getElementById("btnNuevoFormulario").onclick = () => {
-      const cont = document.getElementById("contenido");
-      cont.innerHTML = `
-        <h2>Nuevo Formulario</h2>
-        <label>Título del Formulario:</label>
-        <input type="text" id="tituloFormulario">
-        <div id="camposContainer"></div>
-        <button onclick="agregarCampo()">➕ Agregar campo</button>
-        <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
-      `;
-    };
+    document.getElementById("btnVerEditar").addEventListener("click", mostrarListaFormularios);
+    document.getElementById("btnNuevoFormulario").addEventListener("click", mostrarFormularioNuevo);
 
-    function agregarCampo() {
-      const cont = document.getElementById("camposContainer");
-
-      const campoDiv = document.createElement("div");
-      campoDiv.className = "campo";
-
-      campoDiv.innerHTML = `
-        <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
-        <label>Nombre del campo:</label>
-        <input type="text" class="nombreCampo">
-
-        <label>Tipo de campo:</label>
-        <select class="tipoCampo" onchange="actualizarOpciones(this)">
-          <option value="">Seleccionar tipo</option>
-          <option value="text">Texto</option>
-          <option value="number_entero">Número entero</option>
-          <option value="number_decimal">Número decimal</option>
-          <option value="moneda">Moneda</option>
-          <option value="select">Lista desplegable</option>
-        </select>
-        <div class="opcionesExtra"></div>
-      `;
-
-      cont.appendChild(campoDiv);
-    }
-
-    function actualizarOpciones(select) {
-      const opcionesDiv = select.parentElement.querySelector(".opcionesExtra");
-      const tipo = select.value;
-      opcionesDiv.innerHTML = "";
-
-      if (tipo === "select") {
-        opcionesDiv.innerHTML = `
-          <label>Opciones (una por línea):</label>
-          <textarea class="opcionesLista" rows="4"></textarea>
-        `;
-      }
-    }
-
-    async function guardarFormulario() {
-      const titulo = document.getElementById("tituloFormulario").value.trim();
-      if (!titulo) return alert("El formulario necesita un título.");
-
-      const camposDOM = document.querySelectorAll(".campo");
-      const estructura = [];
-
-      camposDOM.forEach(campo => {
-        const label = campo.querySelector(".nombreCampo").value.trim();
-        const tipo = campo.querySelector(".tipoCampo").value;
-        if (!label || !tipo) return;
-
-        const campoObj = { label };
-
-        if (tipo === "number_entero") {
-          campoObj.type = "number";
-          campoObj.format = "entero";
-        } else if (tipo === "number_decimal") {
-          campoObj.type = "number";
-          campoObj.format = "decimal";
-        } else if (tipo === "moneda") {
-          campoObj.type = "number";
-          campoObj.isCurrency = true;
-        } else if (tipo === "select") {
-          campoObj.type = "select";
-          const opciones = campo.querySelector(".opcionesLista").value.split("\n").map(o => o.trim()).filter(o => o);
-          campoObj.options = opciones;
-        } else {
-          campoObj.type = tipo;
-        }
-
-        estructura.push(campoObj);
-      });
-
-      if (estructura.length === 0) return alert("Agregá al menos un campo.");
-
+    async function obtenerFormularios() {
       try {
-        const res = await fetch(urlWebApp, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "guardarFormulario",
-            titulo,
-            estructura
-          })
-        });
+        const res = await fetch(urlWebApp + "?action=getFormularios");
         const json = await res.json();
         if (json.status === "ok") {
-          alert("Formulario guardado correctamente");
-          document.getElementById("contenido").innerHTML = "";
+          formularios = json.formularios.sort((a, b) => a.titulo.localeCompare(b.titulo));
+          return formularios;
         } else {
-          alert("Error al guardar");
+          formularios = [];
+          return [];
         }
       } catch (e) {
-        console.error("Error:", e);
-        alert("Error al conectar con el servidor.");
+        console.error("Error al obtener formularios:", e);
+        formularios = [];
+        return [];
       }
     }
-  </script>
-</body>
-</html>
+
+    async function mostrarListaFormularios() {
+      formularioSeleccionado = null;
+      modoEdicion = false;
+      const contenido = document.getElementById("contenido");
+      contenido.innerHTML = "<h2>Seleccionar formulario</h2>";
+
+      const formulariosList = await obtenerFormularios();
+
+      if (formulariosList.length === 0) {
+        contenido.innerHTML += `<p class="mensaje">No existen formularios. Crea el primero.</p>`;
+        return;
+      }
+
+      const select = document.createElement("select");
+      select.id = "selectFormularios";
+      select.style.width = "100%";
+      formulariosList.forEach(f => {
+        const option = document.createElement("option");
+        option.value = f.id;
+        option.textContent = f.titulo;
+        select.appendChild(option);
+      });
+      contenido.appendChild(select);
+
+      // Botones Ver, Editar, Eliminar
+      const divBotones = document.createElement("div");
+      divBotones.className = "botones-accion";
+
+      const btnVer = document.createElement("button");
+      btnVer.textContent = "Ver";
+      btnVer.onclick = () => {
+        const id = select.value;
+        const f = formularios.find(f => f.id === id);
+        if (!f) return alert("Seleccione un formulario válido");
+        const tituloUrl = encodeURIComponent(f.titulo.replace(/\s+/g, "-"));
+        window.open(`responder.html?form=${tituloUrl}`, "_blank");
+      };
+
+      const btnEditar = document.createElement("button");
+      btnEditar.textContent = "Editar";
+      btnEditar.onclick = () => {
+        const id = select.value;
+        const f = formularios.find(f => f.id === id);
+        if (!f) return alert("Seleccione un formulario válido");
+        cargarFormularioParaEditar(f.id, f.titulo, f.estructura);
+      };
+
+      const btnEliminar = document.createElement("button");
+      btnEliminar.textContent = "Eliminar";
+      btnEliminar.onclick = async () => {
+        const id = select.value;
+        if (!id) return alert("Seleccione un formulario válido");
+        if (!confirm("¿Confirma que desea eliminar este formulario? Se eliminarán todos sus datos.")) return;
+        try {
+          const res = await fetch(urlWebApp, {
+            method: "POST",
+            body: JSON.stringify({ action: "eliminarFormulario", id }),
+          });
+          const json = await res.json();
+          if (json.status === "ok") {
+            alert("Formulario eliminado.");
+            mostrarListaFormularios();
+          } else {
+            alert("Error al eliminar formulario.");
+          }
+        } catch (e) {
+          alert("Error al eliminar formulario.");
+          console.error(e);
+        }
+      };
+
+      divBotones.appendChild(btnVer);
+      divBotones.appendChild(btnEditar);
+      divBotones.appendChild(btnEliminar);
+
+      contenido.appendChild(divBotones);
+    }
+
+    function mostrarFormularioNuevo() {
+      modoEdicion = false;
+      campos = [];
+      formularioSeleccionado = null;
+      renderFormularioEditor("Crear nuevo formulario", "", campos);
+    }
+
+    function cargarFormularioParaEditar(id, titulo, estructura) {
+      modoEdicion = true;
+      formularioSeleccionado = id;
+      try {
+        if (typeof estructura === "string") estructura = JSON.parse(estructura);
+      } catch {
+        estructura = [];
+      }
+      campos = estructura || [];
+      renderFormularioEditor("Editar formulario", titulo, campos);
+    }
+
+    // Renderiza el editor para nuevo o editar formulario
+    function renderFormularioEditor(tituloEditor, tituloFormValue, campos) {
+      const contenido = document.getElementById("contenido");
+      contenido.innerHTML = `
+        <h2>${tituloEditor}</h2>
+        <label>Título del formulario:
+          <input type="text" id="tituloForm" value="${tituloFormValue}" style="width:100%; font-size:16px; padding:6px; margin-bottom:10px;" />
+        </label>
+        <div id="camposContainer"></div>
+        <button id="btnAgregarCampo" style="margin-top:10px;">+ Agregar campo</button>
+        <button id="btnGuardarFormulario" style="margin-top:10px;">💾 Guardar formulario</button>
+      `;
+
+      const camposContainer = document.getElementById("camposContainer");
+
+      function renderCampos() {
+        camposContainer.innerHTML = "";
+        campos.forEach((campo, i) => {
+          const divCampo = document.createElement("div");
+          divCampo.className = "campo";
+
+          // Campo nombre
+          const inputNombre = document.createElement("input");
+          inputNombre.type = "text";
+          inputNombre.value = campo.label || "";
+          inputNombre.placeholder = "Nombre del campo";
+          inputNombre.oninput = () => {
+            campos[i].label = inputNombre.value;
+          };
+
+          // Campo tipo
+          const selectTipo = document.createElement("select");
+          const tipos = [
+            { val: "text", text: "Texto" },
+            { val: "integer", text: "Número entero" },
+            { val: "decimal", text: "Número decimal" },
+            { val: "currency", text: "Moneda" },
+            { val: "select", text: "Lista desplegable" }
+          ];
+          tipos.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t.val;
+            opt.textContent = t.text;
+            selectTipo.appendChild(opt);
+          });
+          selectTipo.value = campo.type || "text";
+          selectTipo.on
