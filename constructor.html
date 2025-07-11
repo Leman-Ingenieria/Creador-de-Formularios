@@ -3,12 +3,59 @@
 <head>
   <title>Constructor de Formulario</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    .campo { border-bottom: 1px solid #ccc; padding: 10px 0; }
-    label { display: block; margin-top: 10px; }
-    input, select, textarea, button { padding: 8px; margin-top: 5px; width: 100%; box-sizing: border-box; }
-    .seccion-opciones { background: #f8f8f8; padding: 10px; margin-top: 10px; border-radius: 5px; }
-    .campo-opciones label { font-size: 14px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+      background-color: #143757;
+      color: white;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      color: white;
+    }
+    input, select, textarea, button {
+      padding: 8px;
+      margin-top: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      background-color: #1e4a8b;
+      color: white;
+      border: 1px solid #0f2c57;
+      border-radius: 4px;
+    }
+    button {
+      cursor: pointer;
+      font-weight: bold;
+      background-color: #0f2c57;
+      border: none;
+    }
+    button:hover:not(:disabled) {
+      background-color: #375a95;
+    }
+    button:disabled {
+      background-color: #375a95;
+      cursor: not-allowed;
+    }
+    .seccion-opciones {
+      background: #1e4a8b;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+    .campo-opciones label {
+      font-size: 14px;
+      color: white;
+    }
+    #modal {
+      background:#1e4a8b;
+      border:1px solid #0f2c57;
+      padding:20px;
+      margin-top:20px;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -23,7 +70,7 @@
   <button onclick="guardarFormulario()">💾 Guardar formulario</button>
 
   <!-- Modal para agregar campo -->
-  <div id="modal" style="display:none; background:#fff; border:1px solid #ccc; padding:20px; margin-top:20px;">
+  <div id="modal" style="display:none;">
     <h3>Nuevo campo</h3>
     <label>Etiqueta del campo:
       <input id="nuevoLabel" />
@@ -36,6 +83,7 @@
         <option value="number">Número</option>
         <option value="select">Lista desplegable</option>
         <option value="textarea">Área de texto</option>
+        <option value="nuevo">+ Agregar nuevo tipo personalizado</option>
       </select>
     </label>
 
@@ -85,11 +133,25 @@
           </div>
         `;
       }
+
+      if (tipo === "nuevo") {
+        const nuevo = prompt("Ingresá el nuevo tipo personalizado:");
+        if (nuevo && nuevo.trim() !== "") {
+          const select = document.getElementById("nuevoTipo");
+          const opt = document.createElement("option");
+          opt.value = nuevo.trim();
+          opt.textContent = nuevo.trim();
+          select.appendChild(opt);
+          select.value = nuevo.trim();
+        } else {
+          document.getElementById("nuevoTipo").value = "";
+        }
+      }
     }
 
     function confirmarCampo() {
       const label = document.getElementById("nuevoLabel").value.trim();
-      const tipo = document.getElementById("nuevoTipo").value;
+      let tipo = document.getElementById("nuevoTipo").value;
 
       if (!label || !tipo) {
         alert("Completá todos los campos.");
