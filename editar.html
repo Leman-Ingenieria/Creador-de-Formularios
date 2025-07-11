@@ -30,14 +30,17 @@
           return;
         }
 
-        if (json.formularios.length === 0) {
+        // Filtrar para excluir formularios con título "TÍTULO"
+        const formulariosFiltrados = json.formularios.filter(f => f.titulo !== "TÍTULO");
+
+        if (formulariosFiltrados.length === 0) {
           contenedor.textContent = "No hay formularios creados.";
           return;
         }
 
         const lista = document.createElement("ul");
 
-        json.formularios.forEach(form => {
+        formulariosFiltrados.forEach(form => {
           const li = document.createElement("li");
           li.innerHTML = `
             <span>${form.titulo}</span>
@@ -69,3 +72,4 @@
   </script>
 </body>
 </html>
+
