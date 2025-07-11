@@ -1,52 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Seleccionar formulario</title>
+  <meta charset="UTF-8" />
+  <title>Responder Formulario</title>
   <style>
     body {
-      background-color: #143757;
-      color: white;
-      font-family: sans-serif;
-      padding: 30px;
-      text-align: center;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
     }
-    select, button {
-      padding: 10px;
-      font-size: 16px;
-      width: 80%;
-      margin: 10px auto;
+    h1 {
+      text-align: center;
+      color: #143757;
+    }
+    form {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    label {
       display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #143757;
+    }
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 20px;
+      background: #143757;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0e2a53;
+    }
+    .mensaje {
+      text-align: center;
+      margin-top: 20px;
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
     }
   </style>
 </head>
 <body>
-  <h2>Seleccionar formulario</h2>
-  <select id="formSelector">
-    <option value="">Cargando formularios...</option>
-  </select>
-  <button onclick="abrirFormulario()">Abrir formulario</button>
+
+  <h1 id="tituloFormulario">Cargando formulario...</h1>
+
+  <form id="formularioRespuesta" style="display:none;">
+    <!-- Campos dinámicos se insertarán aquí -->
+    <button type="submit">Enviar Respuesta</button>
+  </form>
+
+  <div id="mensaje"></div>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    fetch(urlWebApp + "?action=listarFormularios")
-      .then(r => r.json())
-      .then(data => {
-        const select = document.getElementById("formSelector");
-        select.innerHTML = "";
-        data.formularios.forEach(f => {
-          const opt = document.createElement("option");
-          opt.value = f.id;
-          opt.textContent = f.titulo;
-          select.appendChild(opt);
-        });
-      });
+    // Obtener parámetro form de la URL (esperamos el título con guiones)
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
 
-    function abrirFormulario() {
-      const id = document.getElementById("formSelector").value;
-      if (!id) return alert("Seleccioná un formulario.");
-      window.open(`formulario.html?id=${id}`, "_blank");
+    function deshacerGuiones(text) {
+      return text.replace(/-/g, " ");
+    }
+
+    async function cargarFormulario(titulo) {
+      try {
+        // Traer lista de formularios para encontrar id según título
+        const resList = await fetch(urlWebApp + "?action=getFormularios");
+        const jsonList = await resList.json();
+        if (jsonList.status !== "ok") throw new Error("No se pudo obtener la lista de formularios");
+        
+        const formulario = jsonList.formularios.find(f => f.titulo.toLowerCase() === titulo.toLowerCase());
+        if (!formulario) throw new Error("Formulario no encontrado");
+
+        // Traer estructura
+        const resForm = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(formulario.id));
+        const jsonForm = await resForm.json();
+        if (jsonForm.status !== "ok") throw new Error("No se pudo obtener el formulario");
+
+        document.getElementById("tituloFormulario").textContent = jsonForm.titulo;
+        const formElement = document.getElementById("formularioRespuesta");
+        formElement.style.display = "block";
+
+        // Limpiar cualquier campo previo
+        while (formElement.firstChild && formElement.firstChild.tagName !== "BUTTON") {
+          formElement.removeChild(formElement.firstChild);
+        }
+
+        jsonForm.estructura.forEach(campo => {
+          const label = document.createElement("label");
+          label.textContent = campo.label;
+
+          let input;
+          switch (campo.type) {
+            case "text":
+              input = document.createElement("input");
+              input.type = "text";
+              break;
+            case "number":
+              input = document.createElement("input");
+              input.type = "number";
+              break;
+            case "textarea":
+              input = document.createElement("textarea");
+              break;
+            case "select":
+              input = document.createElement("select");
+              campo.options.forEach(opt => {
+                const option = document.createElement("option");
+                option.value = opt;
+                option.textContent = opt;
+                input.appendChild(option);
+              });
+              break;
+            default:
+              input = document.createElement("input");
+              input.type = "text";
+          }
+          input.name = campo.label;
+          input.required = true;
+
+          formElement.insertBefore(label, formElement.lastElementChild);
+          formElement.insertBefore(input, formElement.lastElementChild);
+        });
+
+        formElement.onsubmit = async (e) => {
+          e.preventDefault();
+          const formData = new FormData(formElement);
+          const datos = {};
+          formData.forEach((value, key) => {
+            datos[key] = value;
+          });
+
+          const enviar = {
+            action: "guardarRespuesta",
+            id: formulario.id,
+            datos
+          };
+
+          try {
+            const res = await fetch(urlWebApp, {
+              method: "POST",
+              body: JSON.stringify(enviar),
+              headers: { "Content-Type": "application/json" }
+            });
+            const json = await res.json();
+            if (json.status === "ok") {
+              document.getElementById("mensaje").textContent = "Respuesta enviada con éxito.";
+              formElement.reset();
+            } else {
+              document.getElementById("mensaje").textContent = "Error al enviar la respuesta.";
+              document.getElementById("mensaje").className = "error";
+            }
+          } catch (error) {
+            document.getElementById("mensaje").textContent = "Error de conexión.";
+            document.getElementById("mensaje").className = "error";
+          }
+        };
+
+      } catch (error) {
+        document.getElementById("tituloFormulario").textContent = "Error: " + error.message;
+      }
+    }
+
+    const tituloForm = deshacerGuiones(getQueryParam("form") || "");
+    if (tituloForm) {
+      cargarFormulario(tituloForm);
+    } else {
+      document.getElementById("tituloFormulario").textContent = "No se especificó ningún formulario.";
     }
   </script>
+
 </body>
 </html>
