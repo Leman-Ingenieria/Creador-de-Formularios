@@ -1,26 +1,81 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Editar Formularios</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { text-align: center; }
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      background: #f4f4f4; 
+      margin: 0;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 70px; /* espacio para el botón volver */
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
     ul { list-style: none; padding: 0; max-width: 600px; margin: auto; }
-    li { background: white; padding: 10px; margin: 10px 0; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-    .acciones button { margin-left: 10px; }
+    li { 
+      background: white; 
+      padding: 10px; 
+      margin: 10px 0; 
+      border-radius: 5px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .acciones button { 
+      margin-left: 10px; 
+      cursor: pointer;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      background-color: #143757;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+    .acciones button:hover {
+      background-color: #0e2a53;
+    }
+
+    #btnVolver {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background-color: #143757;
+      color: white;
+      padding: 8px 12px;
+      font-weight: bold;
+      border-radius: 6px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: background-color 0.3s ease;
+      z-index: 1000;
+    }
+    #btnVolver:hover {
+      background-color: #0e2a53;
+    }
   </style>
 </head>
 <body>
   <h1>Lista de Formularios</h1>
   <div id="contenedorFormularios">Cargando formularios...</div>
 
+  <a href="constructor.html" id="btnVolver" title="Volver a Inicio">⬅ Volver</a>
+
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
     async function cargarFormularios() {
       try {
-        const res = await fetch(`${urlWebApp}?action=getFormularios`);
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getFormularios" })
+        });
         const json = await res.json();
 
         const contenedor = document.getElementById("contenedorFormularios");
@@ -38,7 +93,7 @@
         const lista = document.createElement("ul");
 
         json.formularios.forEach(form => {
-          if (form.titulo.toLowerCase() === "título") return; // Ocultar formulario "TÍTULO"
+          if (form.titulo.toLowerCase() === "título") return; // Ocultar formulario 'TÍTULO'
           const li = document.createElement("li");
           li.innerHTML = `
             <span>${form.titulo}</span>
@@ -64,11 +119,31 @@
     }
 
     function editarFormulario(id) {
-      alert("Función editar aún no implementada");
+      // Abrir constructor.html para edición con parámetro id
+      window.location.href = `constructor.html?id=${id}`;
     }
 
-    function eliminarFormulario(id) {
-      alert("Función eliminar aún no implementada");
+    async function eliminarFormulario(id) {
+      if (!confirm("¿Querés eliminar este formulario? Esta acción no se puede deshacer.")) return;
+
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "eliminarFormulario", id })
+        });
+        const json = await res.json();
+
+        if (json.status === "ok") {
+          alert("Formulario eliminado.");
+          cargarFormularios();
+        } else {
+          alert("Error al eliminar formulario.");
+        }
+      } catch (e) {
+        console.error("Error:", e);
+        alert("Error al conectar con el servidor.");
+      }
     }
 
     cargarFormularios();
