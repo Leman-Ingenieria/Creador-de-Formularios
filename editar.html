@@ -5,166 +5,244 @@
   <style>
     body {
       font-family: sans-serif;
-      background-color: #143757;
-      color: white;
-      padding: 20px;
       max-width: 800px;
-      margin: auto;
+      margin: 20px auto;
+      padding: 10px;
     }
-    label { display: block; margin-top: 10px; }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
     input, select, textarea, button {
+      width: 100%;
       padding: 8px;
       margin-top: 5px;
-      width: 100%;
       box-sizing: border-box;
     }
     .campo {
-      background: #1f4d7a;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+    }
+    .btn-group {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      flex: 1;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h2>Editar formulario</h2>
-
-  <label>Seleccionar formulario:
-    <select id="formularioSelect">
-      <option value="">Cargando...</option>
-    </select>
-  </label>
-
-  <div id="editor" style="display:none;">
-    <label>Título del formulario:
-      <input id="tituloForm" />
+  <h2>Editar Formulario</h2>
+  <div>
+    <label>ID del formulario:
+      <input type="text" id="formId" />
     </label>
+    <button id="cargarBtn">Cargar formulario</button>
+  </div>
 
+  <div id="formEditor" style="display:none;">
+    <label>Título del formulario:
+      <input type="text" id="tituloForm" />
+    </label>
     <div id="campos"></div>
 
-    <button onclick="agregarCampo()">+ Agregar campo</button>
-    <button onclick="guardarCambios()">💾 Guardar cambios</button>
+    <button onclick="abrirModalCampo()">+ Agregar campo</button>
+    <button onclick="guardarCambios()">Guardar cambios</button>
+    <button onclick="eliminarFormulario()" style="background-color:#f44336; color:white;">Eliminar formulario</button>
+  </div>
+
+  <!-- Modal para agregar campo -->
+  <div id="modal" style="display:none; background:#fff; border:1px solid #ccc; padding:20px; margin-top:20px;">
+    <h3>Nuevo campo</h3>
+    <label>Etiqueta del campo:
+      <input id="nuevoLabel" />
+    </label>
+
+    <label>Tipo de campo:
+      <select id="nuevoTipo" onchange="mostrarConfiguracionesTipo()">
+        <option value="">Seleccionar tipo</option>
+        <option value="text">Texto</option>
+        <option value="number">Número</option>
+        <option value="select">Lista desplegable</option>
+        <option value="textarea">Área de texto</option>
+      </select>
+    </label>
+
+    <div id="configTipo" class="seccion-opciones"></div>
+
+    <button onclick="confirmarCampo()">✔ Confirmar campo</button>
+    <button onclick="cerrarModal()">Cancelar</button>
   </div>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
-    let campos = [];
-    let formularioId = "";
 
-    async function cargarFormularios() {
-      const res = await fetch(urlWebApp);
-      const json = await res.json();
-      const select = document.getElementById("formularioSelect");
-      select.innerHTML = `<option value="">Seleccionar</option>`;
-      json.formularios.sort((a, b) => a.titulo.localeCompare(b.titulo)).forEach(f => {
-        const opt = document.createElement("option");
-        opt.value = f.id;
-        opt.textContent = f.titulo;
-        select.appendChild(opt);
-      });
-    }
+    let estructura = [];
 
-    async function cargarFormulario(id) {
-      const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(id));
-      const json = await res.json();
-      if (json.status !== "ok") {
-        alert("Error al cargar formulario");
+    document.getElementById("cargarBtn").addEventListener("click", async () => {
+      const id = document.getElementById("formId").value.trim();
+      if (!id) {
+        alert("Ingresá el ID del formulario.");
         return;
       }
-      formularioId = json.id;
-      document.getElementById("tituloForm").value = json.titulo;
-      campos = json.estructura;
+      const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(id));
+      const data = await res.json();
+
+      if (data.status !== "ok") {
+        alert("Formulario no encontrado.");
+        return;
+      }
+
+      estructura = data.estructura;
+      document.getElementById("tituloForm").value = data.titulo;
       render();
-      document.getElementById("editor").style.display = "block";
-    }
+      document.getElementById("formEditor").style.display = "block";
+    });
 
     function render() {
-      const cont = document.getElementById("campos");
-      cont.innerHTML = "";
-      campos.forEach((c, i) => {
+      const container = document.getElementById("campos");
+      container.innerHTML = "";
+
+      estructura.forEach((campo, i) => {
         const div = document.createElement("div");
         div.className = "campo";
+
+        let info = `${campo.label} (${campo.type})`;
+        if (campo.type === "select" && campo.options) {
+          info += ` - Opciones: ${campo.options.join(", ")}`;
+        }
+        if (campo.type === "number") {
+          info += ` - ${campo.isCurrency ? "Moneda" : "Número"}, ${campo.format}`;
+        }
+
         div.innerHTML = `
-          <label>Etiqueta:
-            <input value="${c.label}" onchange="campos[${i}].label=this.value" />
-          </label>
-          <label>Tipo:
-            <select onchange="cambiarTipoCampo(${i}, this.value)">
-              <option value="text" ${c.type === "text" ? "selected" : ""}>Texto</option>
-              <option value="number" ${c.type === "number" ? "selected" : ""}>Número</option>
-              <option value="select" ${c.type === "select" ? "selected" : ""}>Lista desplegable</option>
-              <option value="textarea" ${c.type === "textarea" ? "selected" : ""}>Área de texto</option>
-            </select>
-          </label>
-          ${c.type === "select" ? `
-            <label>Opciones (una por línea):
-              <textarea onchange="actualizarOpciones(${i}, this.value)">${(c.options || []).join("\n")}</textarea>
-            </label>` : ""}
-          ${c.type === "number" ? `
-            <label><input type="checkbox" ${c.isCurrency ? "checked" : ""} onchange="campos[${i}].isCurrency=this.checked" /> ¿Es moneda?</label>
-            <label>Formato:
-              <select onchange="campos[${i}].format=this.value">
-                <option value="entero" ${c.format === "entero" ? "selected" : ""}>Entero</option>
-                <option value="decimal" ${c.format === "decimal" ? "selected" : ""}>Decimal</option>
-              </select>
-            </label>` : ""}
+          <strong>${info}</strong>
+          <button onclick="editarCampo(${i})" style="float:right;">Editar</button>
+          <button onclick="eliminarCampo(${i})" style="float:right; margin-right: 5px; background:#f44336; color:#fff;">Eliminar</button>
         `;
-        cont.appendChild(div);
+        container.appendChild(div);
       });
     }
 
-    function actualizarOpciones(i, val) {
-      campos[i].options = val.split("\n").map(o => o.trim()).filter(o => o !== "");
+    function abrirModalCampo() {
+      document.getElementById("modal").style.display = "block";
+      document.getElementById("nuevoLabel").value = "";
+      document.getElementById("nuevoTipo").value = "";
+      document.getElementById("configTipo").innerHTML = "";
     }
 
-    function cambiarTipoCampo(i, tipo) {
-      campos[i].type = tipo;
-      if (tipo === "select" && !campos[i].options) campos[i].options = [];
-      if (tipo === "number") {
-        campos[i].isCurrency = false;
-        campos[i].format = "entero";
+    function cerrarModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+
+    function mostrarConfiguracionesTipo() {
+      const tipo = document.getElementById("nuevoTipo").value;
+      const configDiv = document.getElementById("configTipo");
+      configDiv.innerHTML = "";
+
+      if (tipo === "select") {
+        configDiv.innerHTML = `
+          <label>Opciones (una por línea):</label>
+          <textarea id="opcionesSelect" rows="4"></textarea>
+        `;
       }
+      if (tipo === "number") {
+        configDiv.innerHTML = `
+          <label><input type="checkbox" id="esMoneda" /> ¿Es moneda?</label>
+          <label>Formato numérico:
+            <select id="formatoNumero">
+              <option value="entero">Entero</option>
+              <option value="decimal">Decimal</option>
+            </select>
+          </label>
+        `;
+      }
+    }
+
+    function confirmarCampo() {
+      const label = document.getElementById("nuevoLabel").value.trim();
+      const tipo = document.getElementById("nuevoTipo").value;
+
+      if (!label || !tipo) {
+        alert("Completá todos los campos.");
+        return;
+      }
+
+      const nuevoCampo = { label, type: tipo };
+
+      if (tipo === "select") {
+        const opciones = document.getElementById("opcionesSelect").value
+          .split("\n")
+          .map(o => o.trim())
+          .filter(o => o !== "");
+        nuevoCampo.options = opciones;
+      }
+      if (tipo === "number") {
+        nuevoCampo.isCurrency = document.getElementById("esMoneda").checked;
+        nuevoCampo.format = document.getElementById("formatoNumero").value;
+      }
+
+      estructura.push(nuevoCampo);
+      cerrarModal();
       render();
     }
 
-    function agregarCampo() {
-      campos.push({ label: "Nuevo campo", type: "text" });
-      render();
+    function editarCampo(index) {
+      const campo = estructura[index];
+      abrirModalCampo();
+      document.getElementById("nuevoLabel").value = campo.label;
+      document.getElementById("nuevoTipo").value = campo.type;
+      mostrarConfiguracionesTipo();
+
+      if (campo.type === "select" && campo.options) {
+        document.getElementById("opcionesSelect").value = campo.options.join("\n");
+      }
+      if (campo.type === "number") {
+        document.getElementById("esMoneda").checked = campo.isCurrency || false;
+        document.getElementById("formatoNumero").value = campo.format || "entero";
+      }
+
+      // Eliminar el campo viejo antes de confirmar edición
+      estructura.splice(index, 1);
     }
 
     async function guardarCambios() {
       const titulo = document.getElementById("tituloForm").value.trim();
-      if (!titulo || campos.length === 0) {
-        alert("Completá el título y los campos.");
+      if (!titulo) {
+        alert("El título es obligatorio.");
+        return;
+      }
+      if (estructura.length === 0) {
+        alert("El formulario debe tener al menos un campo.");
         return;
       }
 
-      const payload = {
-        action: "actualizarFormulario",
-        id: formularioId,
-        titulo: titulo,
-        estructura: campos
-      };
+      const id = document.getElementById("formId").value;
 
       const res = await fetch(urlWebApp, {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          action: "editarFormulario",
+          id,
+          titulo,
+          estructura
+        })
       });
 
       const json = await res.json();
+
       if (json.status === "ok") {
-        alert("Formulario actualizado.");
-        location.reload();
+        alert("Formulario actualizado correctamente.");
       } else {
-        alert("Error al guardar cambios.");
+        alert("Error al guardar formulario.");
       }
     }
 
-    document.getElementById("formularioSelect").addEventListener("change", e => {
-      if (e.target.value) cargarFormulario(e.target.value);
-    });
-
-    cargarFormularios();
-  </script>
-</body>
-</html>
+    async function eliminarFormulario() {
+      if (!confirm("¿Seguro que deseas eliminar este formulario? Esta acción no se puede deshacer.")) return;
+      const id = document.getElementById("formId").value;
+      const res = await fetch(urlWebApp,
