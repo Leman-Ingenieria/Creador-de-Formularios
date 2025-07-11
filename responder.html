@@ -15,198 +15,73 @@
       display: block;
       margin-top: 15px;
       font-weight: bold;
-      color: white;
     }
-    select, input, textarea, button {
+    select, button {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
       box-sizing: border-box;
-      background-color: #1e4a8b;
-      color: white;
-      border: 1px solid #0f2c57;
-      border-radius: 4px;
-    }
-    select option {
-      color: black;
+      font-size: 16px;
     }
     button {
-      margin-top: 20px;
-      padding: 10px 15px;
       cursor: pointer;
-      background-color: #0f2c57;
-      border: none;
-      font-weight: bold;
-    }
-    button:disabled {
-      background-color: #375a95;
-      cursor: not-allowed;
-    }
-    .moneda::before {
-      content: "$";
-      margin-right: 5px;
+      background-color: #0a2540;
       color: white;
+      border: none;
+      border-radius: 4px;
+      margin-top: 20px;
     }
-    hr {
-      border-color: #375a95;
-      margin: 30px 0;
+    button:hover {
+      background-color: #062138;
     }
   </style>
 </head>
 <body>
   <h2>Seleccionar formulario</h2>
 
-  <label for="selectForm">Elegí un formulario:</label>
+  <label for="selectForm">Formularios disponibles:</label>
   <select id="selectForm">
-    <option value="">-- Seleccionar --</option>
+    <option value="">-- Seleccione un formulario --</option>
   </select>
   <button id="abrirForm" disabled>Abrir formulario</button>
-
-  <hr>
-
-  <div id="contenedorFormulario" style="display:none;">
-    <h3>Responder formulario</h3>
-    <form id="formulario">
-      <div id="campos"></div>
-      <button type="submit">Enviar respuesta</button>
-    </form>
-  </div>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    const selectForm = document.getElementById("selectForm");
-    const abrirBtn = document.getElementById("abrirForm");
-    const contenedorForm = document.getElementById("contenedorFormulario");
-    const formulario = document.getElementById("formulario");
-    const camposDiv = document.getElementById("campos");
-
     async function cargarFormularios() {
-      const res = await fetch(urlWebApp + "?action=listarFormularios");
-      const json = await res.json();
-
-      if (json.status === "ok") {
-        json.formularios.sort((a,b) => a.titulo.localeCompare(b.titulo));
-        json.formularios.forEach(f => {
-          const option = document.createElement("option");
-          option.value = f.id;
-          option.textContent = f.titulo;
-          selectForm.appendChild(option);
-        });
-      } else {
-        alert("Error al cargar formularios");
-      }
-    }
-
-    selectForm.addEventListener("change", () => {
-      abrirBtn.disabled = !selectForm.value;
-    });
-
-    abrirBtn.addEventListener("click", () => {
-      const id = selectForm.value;
-      if (id) {
-        const url = window.location.origin + window.location.pathname + "?id=" + encodeURIComponent(id);
-        window.open(url, "_blank");
-      }
-    });
-
-    function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
-    }
-
-    async function cargarFormulario(id) {
-      const res = await fetch(urlWebApp + "?action=getFormulario&id=" + encodeURIComponent(id));
-      const json = await res.json();
-
-      if (json.status !== "ok") {
-        alert("Formulario no encontrado.");
-        return;
-      }
-
-      const estructura = json.estructura;
-      camposDiv.innerHTML = "";
-
-      estructura.forEach(campo => {
-        const label = document.createElement("label");
-        label.textContent = campo.label;
-
-        let input;
-
-        if (campo.type === "select") {
-          input = document.createElement("select");
-          (campo.options || []).forEach(opt => {
+      try {
+        const res = await fetch(urlWebApp + "?action=listarFormularios");
+        const json = await res.json();
+        if (json.status === "ok") {
+          const select = document.getElementById("selectForm");
+          json.formularios.sort((a,b) => a.titulo.localeCompare(b.titulo));
+          json.formularios.forEach(f => {
             const option = document.createElement("option");
-            option.value = opt;
-            option.textContent = opt;
-            input.appendChild(option);
+            option.value = f.id;
+            option.textContent = f.titulo;
+            select.appendChild(option);
           });
-        } else if (campo.type === "textarea") {
-          input = document.createElement("textarea");
-          input.rows = 4;
-        } else if (campo.type === "number") {
-          input = document.createElement("input");
-          input.type = "number";
-
-          if (campo.format === "entero") input.step = "1";
-          else input.step = "0.01";
-
-          if (campo.isCurrency) {
-            input.classList.add("moneda");
-            input.placeholder = "$";
-          }
         } else {
-          input = document.createElement("input");
-          input.type = campo.type || "text";
+          alert("Error al cargar los formularios");
         }
-
-        input.name = campo.label;
-        input.required = true;
-        camposDiv.appendChild(label);
-        camposDiv.appendChild(input);
-      });
-
-      contenedorForm.style.display = "block";
-
-      formulario.onsubmit = async (e) => {
-        e.preventDefault();
-        const datos = {};
-        const inputs = formulario.querySelectorAll("input, select, textarea");
-        inputs.forEach(input => {
-          datos[input.name] = input.value;
-        });
-
-        const payload = {
-          action: "guardarRespuesta",
-          id: id,
-          datos: datos
-        };
-
-        const res = await fetch(urlWebApp, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          alert("Respuesta enviada correctamente. ¡Gracias!");
-          formulario.reset();
-          contenedorForm.style.display = "none";
-        } else {
-          alert("Error al enviar la respuesta.");
-        }
-      };
+      } catch (e) {
+        alert("Error en la conexión");
+      }
     }
 
-    (async () => {
-      await cargarFormularios();
+    document.getElementById("selectForm").addEventListener("change", function() {
+      document.getElementById("abrirForm").disabled = this.value === "";
+    });
 
-      const id = getQueryParam("id");
+    document.getElementById("abrirForm").addEventListener("click", () => {
+      const id = document.getElementById("selectForm").value;
       if (id) {
-        selectForm.value = id;
-        abrirBtn.disabled = false;
-        await cargarFormulario(id);
+        // Abrir en nueva pestaña el formulario para responder
+        window.open(`formulario.html?id=${encodeURIComponent(id)}`, "_blank");
       }
-    })();
+    });
+
+    cargarFormularios();
   </script>
 </body>
 </html>
