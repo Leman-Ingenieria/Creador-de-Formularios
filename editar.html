@@ -1,162 +1,320 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Editar Formularios</title>
-  <style>
-    body {
-      margin: 0; font-family: Arial, sans-serif; height: 100vh; display: flex; background: #f0f0f0;
-    }
-    nav {
-      width: 220px; background: #143757; color: white; display: flex; flex-direction: column; padding-top: 20px; overflow-y: auto;
-    }
-    nav .formulario-item {
-      padding: 10px 15px; border-bottom: 1px solid #1e4277; cursor: pointer; font-weight: bold; color: white; display: flex; justify-content: space-between; align-items: center;
-    }
-    nav .formulario-item:hover {
-      background: #0e2a53;
-    }
-    nav .opciones {
-      background: #1e4277; display: none; flex-direction: column; margin-top: 5px;
-    }
-    nav .opciones button {
-      background: none; border: none; color: white; padding: 8px 15px; text-align: left; cursor: pointer;
-    }
-    nav .opciones button:hover {
-      background: #0e2a53;
-    }
-    main {
-      flex: 1; padding: 20px; overflow-y: auto; background: white;
-    }
-    h1 {
-      text-align: center; margin-top: 0; margin-bottom: 20px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Editar Formularios</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    background: #f0f0f0;
+  }
+  nav {
+    width: 280px;
+    background-color: #143757;
+    color: white;
+    overflow-y: auto;
+    padding: 10px 0;
+  }
+  nav .formulario-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+  }
+  nav .formulario-item:hover {
+    background-color: #0e2a53;
+  }
+  nav .formulario-item .flecha {
+    font-size: 18px;
+    color: white;
+    user-select: none;
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+  }
+  nav .formulario-item.active .flecha {
+    transform: rotate(180deg);
+  }
+  nav .submenu {
+    background-color: #1e4277;
+    display: none;
+    flex-direction: column;
+  }
+  nav .submenu.show {
+    display: flex;
+  }
+  nav .submenu button {
+    background: none;
+    border: none;
+    color: white;
+    padding: 8px 40px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  nav .submenu button:hover {
+    background-color: #0e2a53;
+  }
+  main {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: white;
+  }
+  h1 {
+    margin-top: 0;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  #formEditor {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+  input[type="text"], textarea, select {
+    width: 100%;
+    padding: 6px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+  }
+  .campo {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 5px;
+    position: relative;
+  }
+  .campo .eliminar-campo {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    color: red;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button.guardar {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  /* Flecha para volver */
+  #btnVolver {
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    background-color: #143757;
+    border: none;
+    color: white;
+    font-size: 20px;
+    padding: 10px 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: background-color 0.3s ease;
+  }
+  #btnVolver:hover {
+    background-color: #0e2a53;
+  }
+</style>
 </head>
 <body>
-  <nav id="menuFormularios">
-    <!-- Lista de formularios aquí -->
+  <nav id="navFormularios">
+    <!-- Lista de formularios se cargará aquí -->
   </nav>
   <main>
-    <h1>Editar Formulario</h1>
-    <div id="editorContenido">
-      <p>Seleccioná un formulario para editar.</p>
+    <h1 id="tituloEditor">Editar Formulario</h1>
+    <div id="formEditor">
+      <p>Selecciona un formulario para editarlo.</p>
     </div>
   </main>
+
+  <button id="btnVolver" title="Volver">&#8592;</button>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
+    const nav = document.getElementById('navFormularios');
+    const formEditor = document.getElementById('formEditor');
+    const tituloEditor = document.getElementById('tituloEditor');
+
+    // Cargar lista de formularios
     async function cargarFormularios() {
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "getFormularios" })
+          body: JSON.stringify({ action: "getFormularios" }),
         });
         const json = await res.json();
-
-        if (json.status !== "ok") {
-          document.getElementById("menuFormularios").innerHTML = "<p style='color:white;padding:10px;'>Error al cargar formularios.</p>";
+        if(json.status !== "ok") {
+          nav.innerHTML = '<p style="color:#fff; padding:10px;">Error al cargar formularios.</p>';
           return;
         }
 
-        if (json.formularios.length === 0) {
-          document.getElementById("menuFormularios").innerHTML = "<p style='color:white;padding:10px;'>No hay formularios creados.</p>";
+        if(json.formularios.length === 0) {
+          nav.innerHTML = '<p style="color:#fff; padding:10px;">No hay formularios creados.</p>';
           return;
         }
 
-        const menu = document.getElementById("menuFormularios");
-        menu.innerHTML = "";
-
+        nav.innerHTML = '';
         json.formularios.forEach(form => {
-          if(form.titulo.toUpperCase() === "TÍTULO") return; // No mostrar si es solo título
+          const div = document.createElement('div');
+          div.classList.add('formulario-item');
+          div.dataset.id = form.id;
 
-          const item = document.createElement("div");
-          item.className = "formulario-item";
-          item.innerHTML = `
+          div.innerHTML = `
             <span>${form.titulo}</span>
-            <button aria-label="Mostrar opciones">▼</button>
-            <div class="opciones">
-              <button onclick="verFormulario('${form.id}')">Ver</button>
-              <button onclick="editarFormulario('${form.id}')">Editar</button>
-              <button onclick="eliminarFormulario('${form.id}', '${form.titulo}')">Eliminar</button>
+            <span class="flecha">&#9660;</span>
+            <div class="submenu">
+              <button class="btnVer">Ver</button>
+              <button class="btnEditar">Editar</button>
+              <button class="btnEliminar">Eliminar</button>
             </div>
           `;
-          menu.appendChild(item);
 
-          const btnFlecha = item.querySelector("button");
-          const opciones = item.querySelector(".opciones");
-          btnFlecha.addEventListener("click", () => {
-            const visible = opciones.style.display === "flex";
-            opciones.style.display = visible ? "none" : "flex";
+          nav.appendChild(div);
+
+          const flecha = div.querySelector('.flecha');
+          const submenu = div.querySelector('.submenu');
+
+          flecha.addEventListener('click', () => {
+            // Ocultar otros submenus
+            document.querySelectorAll('nav .submenu').forEach(sm => {
+              if(sm !== submenu) sm.classList.remove('show');
+            });
+            // Toggle actual submenu
+            submenu.classList.toggle('show');
+            div.classList.toggle('active');
+          });
+
+          // Botones acciones
+          div.querySelector('.btnVer').addEventListener('click', () => {
+            window.open(`formulario.html?id=${form.id}`, '_blank');
+          });
+          div.querySelector('.btnEditar').addEventListener('click', () => {
+            cargarFormularioParaEditar(form.id);
+            // Cerrar submenu
+            submenu.classList.remove('show');
+            div.classList.remove('active');
+          });
+          div.querySelector('.btnEliminar').addEventListener('click', () => {
+            if(confirm(`¿Seguro que querés eliminar el formulario "${form.titulo}"? Esta acción no se puede deshacer.`)) {
+              eliminarFormulario(form.id);
+            }
+            // Cerrar submenu
+            submenu.classList.remove('show');
+            div.classList.remove('active');
           });
         });
-      } catch (e) {
+
+      } catch(e) {
+        nav.innerHTML = '<p style="color:#fff; padding:10px;">Error al conectar con el servidor.</p>';
         console.error(e);
-        document.getElementById("menuFormularios").innerHTML = "<p style='color:white;padding:10px;'>Error al conectar con el servidor.</p>";
       }
     }
 
-    async function verFormulario(id) {
-      window.open(`formulario.html?id=${id}`, "_blank");
-    }
-
-    async function editarFormulario(id) {
-      const editor = document.getElementById("editorContenido");
-      editor.innerHTML = "<p>Cargando formulario...</p>";
-
+    // Cargar formulario para editar
+    async function cargarFormularioParaEditar(id) {
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "getFormulario", id })
+          body: JSON.stringify({ action: "getFormulario", id }),
         });
         const json = await res.json();
 
-        if (json.status !== "ok") {
-          editor.innerHTML = "<p>Error al cargar formulario.</p>";
+        if(json.status !== "ok") {
+          formEditor.innerHTML = '<p>Error al cargar el formulario.</p>';
           return;
         }
 
-        // Mostrar el formulario en modo edición simple (mostrar título y estructura JSON)
-        editor.innerHTML = `
-          <h2>Editar: ${json.titulo}</h2>
-          <pre style="background:#eee; padding:10px; border-radius:5px; max-height: 400px; overflow: auto;">${JSON.stringify(json.estructura, null, 2)}</pre>
-          <p><em>Edición avanzada próximamente.</em></p>
+        tituloEditor.textContent = `Editar Formulario: ${json.titulo}`;
+
+        const estructura = json.estructura;
+
+        // Mostrar formulario editable igual que constructor.html pero con datos cargados
+        formEditor.innerHTML = `
+          <label>Título del Formulario:</label>
+          <input type="text" id="tituloFormulario" value="${json.titulo}">
+
+          <div id="camposContainer"></div>
+
+          <button id="btnAgregarCampo">➕ Agregar campo</button>
+          <button id="btnGuardar">💾 Guardar cambios</button>
         `;
-      } catch (e) {
-        console.error(e);
-        editor.innerHTML = "<p>Error al conectar con el servidor.</p>";
-      }
-    }
 
-    async function eliminarFormulario(id, titulo) {
-      if (!confirm(`¿Seguro que querés eliminar el formulario "${titulo}"? Esta acción no se puede deshacer.`)) return;
+        const camposContainer = document.getElementById('camposContainer');
 
-      try {
-        const res = await fetch(urlWebApp, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "eliminarFormulario", id })
+        estructura.forEach(campo => {
+          agregarCampo(camposContainer, campo);
         });
-        const json = await res.json();
 
-        if (json.status === "ok") {
-          alert("Formulario eliminado correctamente.");
-          cargarFormularios();
-          document.getElementById("editorContenido").innerHTML = "<p>Seleccioná un formulario para editar.</p>";
-        } else {
-          alert("Error al eliminar el formulario.");
-        }
-      } catch (e) {
+        document.getElementById('btnAgregarCampo').onclick = () => {
+          agregarCampo(camposContainer);
+        };
+
+        document.getElementById('btnGuardar').onclick = async () => {
+          await guardarCambios(id);
+        };
+
+      } catch(e) {
+        formEditor.innerHTML = '<p>Error al conectar con el servidor.</p>';
         console.error(e);
-        alert("Error al conectar con el servidor.");
       }
     }
 
-    // Carga inicial
-    cargarFormularios();
-  </script>
-</body>
-</html>
+    // Agrega un campo en el editor (si recibe campo lo carga, sino crea uno nuevo)
+    function agregarCampo(container, campo = null) {
+      const div = document.createElement('div');
+      div.classList.add('campo');
+
+      const labelVal = campo ? campo.label : '';
+      const typeVal = campo ? campo.type : '';
+      const formatVal = campo && campo.format ? campo.format : '';
+      const isCurrencyVal = campo && campo.isCurrency ? true : false;
+      const optionsVal = campo && campo.options ? campo.options : [];
+
+      div.innerHTML = `
+        <span class="eliminar-campo" title="Eliminar campo">×</span>
+
+        <label>Nombre del campo:</label>
+        <input type="text" class="nombreCampo" value="${labelVal}">
+
+        <label>Tipo de campo:</label>
+        <select class="tipoCampo">
+          <option value="">Seleccionar tipo</option>
+          <option value="text" ${typeVal==='text' ? 'selected' : ''}>Texto</option>
+          <option value="number_entero" ${typeVal==='number' && formatVal==='entero' ? 'selected' : ''}>Número entero</option>
+          <option value="number_decimal" ${typeVal==='number' && formatVal==='decimal' ? 'selected' : ''}>Número decimal</option>
+          <option value="moneda" ${typeVal==='number' && isCurrencyVal ? 'selected' : ''}>Moneda</option>
+          <option value="select" ${typeVal==='select' ? 'selected' : ''}>Lista desplegable</option>
+        </select>
+
+        <div class="opcionesExtra"></div>
+      `;
+
+      // Si tipo es select, mostrar opciones
+      const select = div.querySelector('.tipoCampo');
+      const opcionesDiv = div.querySelector('.opcionesExtra');
+
+      function actualizarOpciones() {
+        opcionesDiv.innerHTML = '';
+        if(select.value === 'select') {
+          const opcionesTexto = optionsVal.length > 0 ? optionsVal.join('\n') : '';
+          opcionesDiv.innerHTML = `
+            <label>Opciones (una por línea):</label>
+            <textarea class="opcionesLista" rows="4">${op
