@@ -2,27 +2,175 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Prueba de conexión</title>
+  <title>Constructor de Formularios</title>
+  <style>
+    body {
+      margin: 0; font-family: Arial, sans-serif; height: 100vh; display: flex; background: #f0f0f0;
+    }
+    nav {
+      width: 220px; background: #143757; color: white; display: flex; flex-direction: column; padding-top: 20px;
+    }
+    nav button, nav .submenu button {
+      background: none; border: none; color: white; text-align: left; padding: 12px 20px; cursor: pointer; font-size: 16px;
+    }
+    nav button:hover, nav .submenu button:hover {
+      background: #0e2a53;
+    }
+    nav .submenu {
+      display: none; flex-direction: column; background: #1e4277;
+    }
+    nav .submenu.show {
+      display: flex;
+    }
+    main {
+      flex: 1; padding: 20px; overflow-y: auto; background: white;
+    }
+    h1 {
+      text-align: center; margin-top: 0; margin-bottom: 20px;
+    }
+    .campo {
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      position: relative;
+    }
+    .campo .eliminar {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      cursor: pointer;
+      color: red;
+      font-weight: bold;
+    }
+    .campo label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    #camposContainer {
+      max-width: 500px;
+      margin-top: 20px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Test de Guardado de Formulario</h1>
-  <input type="text" id="titulo" placeholder="Título del formulario" />
-  <button onclick="guardar()">Guardar</button>
+  <nav>
+    <button id="btnFormularios">Formularios ▾</button>
+    <div id="submenuFormularios" class="submenu">
+      <button onclick="window.location.href='https://leman-ingenieria.github.io/Creador-de-Formularios/editar.html'">Ver/Editar</button>
+      <button id="btnNuevoFormulario">Nuevo Formulario</button>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Entorno de Trabajo</h1>
+    <div id="contenido"></div>
+  </main>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    async function guardar() {
-      const titulo = document.getElementById("titulo").value.trim();
-      if (!titulo) {
-        alert("Escribí un título");
-        return;
-      }
+    document.getElementById("btnFormularios").onclick = () => {
+      document.getElementById("submenuFormularios").classList.toggle("show");
+    };
 
-      const estructura = [
-        { label: "Nombre", type: "text" },
-        { label: "Edad", type: "number" }
-      ];
+    document.getElementById("btnNuevoFormulario").onclick = () => {
+      const cont = document.getElementById("contenido");
+      cont.innerHTML = `
+        <h2>Nuevo Formulario</h2>
+        <label>Título del Formulario:</label>
+        <input type="text" id="tituloFormulario">
+        <div id="camposContainer"></div>
+        <button onclick="agregarCampo()">➕ Agregar campo</button>
+        <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
+      `;
+    };
+
+    function agregarCampo() {
+      const cont = document.getElementById("camposContainer");
+
+      const campoDiv = document.createElement("div");
+      campoDiv.className = "campo";
+
+      campoDiv.innerHTML = `
+        <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+        <label>Nombre del campo:</label>
+        <input type="text" class="nombreCampo">
+
+        <label>Tipo de campo:</label>
+        <select class="tipoCampo" onchange="actualizarOpciones(this)">
+          <option value="">Seleccionar tipo</option>
+          <option value="text">Texto</option>
+          <option value="number_entero">Número entero</option>
+          <option value="number_decimal">Número decimal</option>
+          <option value="moneda">Moneda</option>
+          <option value="select">Lista desplegable</option>
+        </select>
+        <div class="opcionesExtra"></div>
+      `;
+
+      cont.appendChild(campoDiv);
+    }
+
+    function actualizarOpciones(select) {
+      const opcionesDiv = select.parentElement.querySelector(".opcionesExtra");
+      const tipo = select.value;
+      opcionesDiv.innerHTML = "";
+
+      if (tipo === "select") {
+        opcionesDiv.innerHTML = `
+          <label>Opciones (una por línea):</label>
+          <textarea class="opcionesLista" rows="4"></textarea>
+        `;
+      }
+    }
+
+    async function guardarFormulario() {
+      const titulo = document.getElementById("tituloFormulario").value.trim();
+      if (!titulo) return alert("El formulario necesita un título.");
+
+      const camposDOM = document.querySelectorAll(".campo");
+      const estructura = [];
+
+      camposDOM.forEach(campo => {
+        const label = campo.querySelector(".nombreCampo").value.trim();
+        const tipo = campo.querySelector(".tipoCampo").value;
+        if (!label || !tipo) return;
+
+        const campoObj = { label };
+
+        if (tipo === "number_entero") {
+          campoObj.type = "number";
+          campoObj.format = "entero";
+        } else if (tipo === "number_decimal") {
+          campoObj.type = "number";
+          campoObj.format = "decimal";
+        } else if (tipo === "moneda") {
+          campoObj.type = "number";
+          campoObj.isCurrency = true;
+        } else if (tipo === "select") {
+          campoObj.type = "select";
+          const opciones = campo.querySelector(".opcionesLista").value.split("\n").map(o => o.trim()).filter(o => o);
+          campoObj.options = opciones;
+        } else {
+          campoObj.type = tipo;
+        }
+
+        estructura.push(campoObj);
+      });
+
+      if (estructura.length === 0) return alert("Agregá al menos un campo.");
 
       try {
         const res = await fetch(urlWebApp, {
@@ -31,25 +179,20 @@
             action: "guardarFormulario",
             titulo,
             estructura
-          }),
-          headers: {
-            "Content-Type": "application/json"
-          }
+          })
         });
-
         const json = await res.json();
-        console.log(json);
         if (json.status === "ok") {
           alert("Formulario guardado correctamente");
+          document.getElementById("contenido").innerHTML = "";
         } else {
-          alert("Error del servidor: " + json.message);
+          alert("Error al guardar");
         }
-      } catch (error) {
-        console.error("Error al conectar:", error);
+      } catch (e) {
+        console.error("Error:", e);
         alert("Error al conectar con el servidor.");
       }
     }
   </script>
 </body>
 </html>
-
