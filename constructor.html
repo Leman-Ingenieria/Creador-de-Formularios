@@ -5,194 +5,504 @@
   <title>Constructor de Formularios</title>
   <style>
     body {
-      margin: 0; font-family: Arial, sans-serif; height: 100vh; display: flex; background: #f0f0f0;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
     }
     nav {
-      width: 220px; background: #143757; color: white; display: flex; flex-direction: column; padding-top: 20px;
-    }
-    nav button, nav .submenu button {
-      background: none; border: none; color: white; text-align: left; padding: 12px 20px; cursor: pointer; font-size: 16px;
-    }
-    nav button:hover, nav .submenu button:hover {
-      background: #0e2a53;
-    }
-    nav .submenu {
-      display: none; flex-direction: column; background: #1e4277;
-    }
-    nav .submenu.show {
+      width: 230px;
+      background-color: #005b96;
+      color: white;
       display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    nav h2 {
+      margin-top: 0;
+      font-size: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    nav button {
+      background: #0288d1;
+      border: none;
+      color: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    nav button:hover {
+      background: #0277bd;
     }
     main {
-      flex: 1; padding: 20px; overflow-y: auto; background: white;
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
     h1 {
-      text-align: center; margin-top: 0; margin-bottom: 20px;
+      margin-top: 0;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin: 10px 0 4px 0;
+      font-weight: bold;
+    }
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    textarea {
+      resize: vertical;
     }
     .campo {
-      margin-bottom: 10px;
-      padding: 10px;
       border: 1px solid #ccc;
-      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
       position: relative;
+      border-radius: 4px;
     }
     .campo .eliminar {
       position: absolute;
-      top: 5px;
+      top: 8px;
       right: 10px;
       cursor: pointer;
       color: red;
       font-weight: bold;
     }
-    .campo label {
-      display: block;
+    button#btnAgregarCampo {
+      background: #00796b;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
       margin-top: 10px;
     }
-    select, input, textarea {
+    button#btnAgregarCampo:hover {
+      background: #004d40;
+    }
+    button#btnGuardarCambios {
+      background: #0288d1;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 15px;
+    }
+    button#btnGuardarCambios:hover {
+      background: #0277bd;
+    }
+    /* Para la sección de edición vía selector */
+    #selectFormularios {
       width: 100%;
-      padding: 6px;
-      margin-top: 5px;
+      padding: 8px;
+      font-size: 16px;
+      margin-bottom: 15px;
       box-sizing: border-box;
     }
-    #camposContainer {
-      max-width: 500px;
-      margin-top: 20px;
+    #formularioEdicion h3 {
+      margin-top: 0;
     }
-    button {
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 16px;
+    /* Botones en edición */
+    #formularioEdicion > div > div > button {
+      cursor: pointer;
+      border-radius: 4px;
+      border: none;
+      padding: 8px 15px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    #btnVer {
+      background-color: #0288d1;
+      color: white;
+      margin-right: 10px;
+    }
+    #btnEliminar {
+      background-color: #d9534f;
+      color: white;
     }
   </style>
 </head>
 <body>
   <nav>
-    <button id="btnFormularios">Formularios ▾</button>
-    <div id="submenuFormularios" class="submenu">
-      <button onclick="window.location.href='https://leman-ingenieria.github.io/Creador-de-Formularios/editar.html'">Ver/Editar</button>
-      <button id="btnNuevoFormulario">Nuevo Formulario</button>
-    </div>
+    <h2>Menú</h2>
+    <button id="btnNuevo">Nuevo formulario</button>
+    <button id="btnVerEditar">Ver/Editar formulario</button>
   </nav>
 
   <main>
-    <h1>Entorno de Trabajo</h1>
-    <div id="contenido"></div>
+    <h1 id="tituloMain">Entorno de trabajo</h1>
+    <div id="contenido">
+      <form id="formNuevoFormulario">
+        <label for="titulo">Título del formulario:</label>
+        <input type="text" id="titulo" required />
+
+        <div id="campos"></div>
+
+        <button type="button" id="btnAgregarCampo">Agregar campo</button>
+        <br />
+        <button type="submit" id="btnGuardar">Guardar formulario</button>
+      </form>
+    </div>
   </main>
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
 
-    document.getElementById("btnFormularios").onclick = () => {
-      document.getElementById("submenuFormularios").classList.toggle("show");
-    };
+    // Inicializar: mostrar nuevo formulario vacío
+    let formularioActualId = null; // Para edición o null si es nuevo
 
-    document.getElementById("btnNuevoFormulario").onclick = () => {
-      const cont = document.getElementById("contenido");
-      cont.innerHTML = `
-        <h2>Nuevo Formulario</h2>
-        <label>Título del Formulario:</label>
-        <input type="text" id="tituloFormulario">
-        <div id="camposContainer"></div>
-        <button onclick="agregarCampo()">➕ Agregar campo</button>
-        <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
+    const contenido = document.getElementById("contenido");
+    const tituloMain = document.getElementById("tituloMain");
+    const formNuevo = document.getElementById("formNuevoFormulario");
+    const camposDiv = document.getElementById("campos");
+
+    // Eventos menú
+    document.getElementById("btnNuevo").onclick = () => mostrarFormularioNuevo();
+    document.getElementById("btnVerEditar").onclick = async () => {
+      tituloMain.textContent = "Seleccionar formulario para editar";
+      contenido.innerHTML = `
+        <select id="selectFormularios"><option>Cargando...</option></select>
+        <div id="formularioEdicion"></div>
       `;
+
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "getFormularios" }),
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+
+        if (data.status !== "ok" || !data.formularios.length) {
+          document.getElementById("selectFormularios").innerHTML = `<option>No hay formularios disponibles</option>`;
+          return;
+        }
+
+        const select = document.getElementById("selectFormularios");
+        select.innerHTML = `<option value="">-- Seleccione --</option>`;
+        data.formularios.forEach(f => {
+          const option = document.createElement("option");
+          option.value = f.id;
+          option.textContent = f.titulo;
+          select.appendChild(option);
+        });
+
+        select.onchange = () => {
+          if (!select.value) {
+            document.getElementById("formularioEdicion").innerHTML = "";
+            return;
+          }
+          cargarFormularioEdicion(select.value);
+        };
+      } catch (e) {
+        contenido.innerHTML = `<p style="color:red;">Error al cargar formularios.</p>`;
+        console.error(e);
+      }
     };
 
-    function agregarCampo() {
-      const cont = document.getElementById("camposContainer");
+    // Función mostrar formulario nuevo limpio
+    function mostrarFormularioNuevo() {
+      formularioActualId = null;
+      tituloMain.textContent = "Entorno de trabajo";
+      contenido.innerHTML = `
+        <form id="formNuevoFormulario">
+          <label for="titulo">Título del formulario:</label>
+          <input type="text" id="titulo" required />
 
-      const campoDiv = document.createElement("div");
-      campoDiv.className = "campo";
+          <div id="campos"></div>
 
-      campoDiv.innerHTML = `
-        <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+          <button type="button" id="btnAgregarCampo">Agregar campo</button>
+          <br />
+          <button type="submit" id="btnGuardar">Guardar formulario</button>
+        </form>
+      `;
+
+      const formNuevoFormulario = document.getElementById("formNuevoFormulario");
+      const camposDivNuevo = document.getElementById("campos");
+      document.getElementById("btnAgregarCampo").onclick = () => agregarCampo(camposDivNuevo);
+
+      formNuevoFormulario.onsubmit = async e => {
+        e.preventDefault();
+        const titulo = formNuevoFormulario.querySelector("#titulo").value.trim();
+        if (!titulo) {
+          alert("El título es obligatorio");
+          return;
+        }
+        const campos = [];
+        const camposDOM = camposDivNuevo.querySelectorAll(".campo");
+        for (const campo of camposDOM) {
+          const label = campo.querySelector(".nombreCampo").value.trim();
+          const tipoSelect = campo.querySelector(".tipoCampo").value;
+          if (!label || !tipoSelect) continue;
+
+          const campoObj = { label };
+
+          if (tipoSelect === "number_entero") {
+            campoObj.type = "number";
+            campoObj.format = "entero";
+          } else if (tipoSelect === "number_decimal") {
+            campoObj.type = "number";
+            campoObj.format = "decimal";
+          } else if (tipoSelect === "moneda") {
+            campoObj.type = "number";
+            campoObj.isCurrency = true;
+          } else if (tipoSelect === "select") {
+            campoObj.type = "select";
+            const opcionesTextarea = campo.querySelector(".opcionesLista");
+            campoObj.options = opcionesTextarea ? opcionesTextarea.value.split("\n").map(o => o.trim()).filter(o => o) : [];
+          } else {
+            campoObj.type = tipoSelect;
+          }
+          campos.push(campoObj);
+        }
+
+        try {
+          const res = await fetch(urlWebApp, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "guardarFormulario",
+              id: formularioActualId,
+              titulo,
+              estructura: campos
+            }),
+            headers: { "Content-Type": "application/json" }
+          });
+          const data = await res.json();
+
+          if (data.status === "ok") {
+            alert("Formulario guardado correctamente.");
+            formularioActualId = data.id;
+            mostrarFormularioNuevo(); // limpia para nuevo
+          } else {
+            alert("Error al guardar formulario.");
+          }
+        } catch (e) {
+          alert("Error al conectar con el servidor.");
+          console.error(e);
+        }
+      };
+
+      // Botón agregar campo
+      document.getElementById("btnAgregarCampo").onclick = () => agregarCampo(camposDivNuevo);
+
+      // Arrancamos con un campo vacío
+      agregarCampo(camposDivNuevo);
+    }
+
+    // Función para agregar campo en nuevo formulario
+    function agregarCampo(container, campoData = null) {
+      const div = document.createElement("div");
+      div.className = "campo";
+
+      div.innerHTML = `
+        <span class="eliminar" title="Eliminar campo" style="position:absolute; top:5px; right:10px; cursor:pointer; color:red; font-weight:bold;">❌</span>
         <label>Nombre del campo:</label>
-        <input type="text" class="nombreCampo">
-
+        <input type="text" class="nombreCampo" value="${campoData ? campoData.label : ""}" />
         <label>Tipo de campo:</label>
-        <select class="tipoCampo" onchange="actualizarOpciones(this)">
+        <select class="tipoCampo">
           <option value="">Seleccionar tipo</option>
-          <option value="text">Texto</option>
-          <option value="number_entero">Número entero</option>
-          <option value="number_decimal">Número decimal</option>
-          <option value="moneda">Moneda</option>
-          <option value="select">Lista desplegable</option>
+          <option value="text" ${campoData && campoData.type === "text" ? "selected" : ""}>Texto</option>
+          <option value="number_entero" ${campoData && campoData.type === "number" && campoData.format === "entero" ? "selected" : ""}>Número entero</option>
+          <option value="number_decimal" ${campoData && campoData.type === "number" && campoData.format === "decimal" ? "selected" : ""}>Número decimal</option>
+          <option value="moneda" ${campoData && campoData.type === "number" && campoData.isCurrency ? "selected" : ""}>Moneda</option>
+          <option value="select" ${campoData && campoData.type === "select" ? "selected" : ""}>Lista desplegable</option>
         </select>
         <div class="opcionesExtra"></div>
       `;
 
-      cont.appendChild(campoDiv);
+      container.appendChild(div);
+
+      const selectTipo = div.querySelector(".tipoCampo");
+      const opcionesDiv = div.querySelector(".opcionesExtra");
+
+      function actualizarOpciones() {
+        const tipo = selectTipo.value;
+        opcionesDiv.innerHTML = "";
+        if (tipo === "select") {
+          const opcionesTexto = campoData && campoData.options ? campoData.options.join("\n") : "";
+          opcionesDiv.innerHTML = `
+            <label>Opciones (una por línea):</label>
+            <textarea class="opcionesLista" rows="4">${opcionesTexto}</textarea>
+          `;
+        }
+      }
+      actualizarOpciones();
+
+      selectTipo.onchange = actualizarOpciones;
+
+      // Eliminar campo
+      div.querySelector(".eliminar").onclick = () => div.remove();
     }
 
-    function actualizarOpciones(select) {
-      const opcionesDiv = select.parentElement.querySelector(".opcionesExtra");
-      const tipo = select.value;
-      opcionesDiv.innerHTML = "";
+    // Función para cargar formulario para edición (modo Ver/Editar)
+    async function cargarFormularioEdicion(id) {
+      const formularioEdicionDiv = document.getElementById("formularioEdicion");
+      formularioEdicionDiv.innerHTML = `<p>Cargando formulario...</p>`;
 
-      if (tipo === "select") {
-        opcionesDiv.innerHTML = `
-          <label>Opciones (una por línea):</label>
-          <textarea class="opcionesLista" rows="4"></textarea>
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "getFormulario", id }),
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
+
+        if (data.status !== "ok") {
+          formularioEdicionDiv.innerHTML = `<p style="color:red;">No se pudo cargar el formulario</p>`;
+          return;
+        }
+
+        const { titulo, estructura } = data;
+
+        formularioEdicionDiv.innerHTML = `
+          <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3>Editar Formulario: ${titulo}</h3>
+            <div>
+              <button id="btnVer" style="margin-right:10px;">Ver</button>
+              <button id="btnEliminar" style="background-color:#d9534f; color:white;">Eliminar</button>
+            </div>
+          </div>
+          <div id="edicionCampos"></div>
+          <button id="btnGuardarCambios" style="margin-top:10px;">Guardar Cambios</button>
         `;
+
+        const camposDiv = formularioEdicionDiv.querySelector("#edicionCampos");
+
+        estructura.forEach((campo) => {
+          agregarCampo(camposDiv, campo);
+        });
+
+        formularioEdicionDiv.querySelector("#btnVer").onclick = () => {
+          window.open(`formulario.html?id=${id}`, "_blank");
+        };
+
+        formularioEdicionDiv.querySelector("#btnEliminar").onclick = () => {
+          if (confirm(`¿Eliminar formulario "${titulo}"? Esta acción no se puede deshacer.`)) {
+            eliminarFormulario(id);
+          }
+        };
+
+        formularioEdicionDiv.querySelector("#btnGuardarCambios").onclick = () => {
+          guardarCambios(id, titulo);
+        };
+
+      } catch (e) {
+        formularioEdicionDiv.innerHTML = `<p style="color:red;">Error al cargar el formulario.</p>`;
+        console.error(e);
       }
     }
 
-    async function guardarFormulario() {
-      const titulo = document.getElementById("tituloFormulario").value.trim();
-      if (!titulo) return alert("El formulario necesita un título.");
+    async function eliminarFormulario(id) {
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "eliminarFormulario", id }),
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.json();
 
-      const camposDOM = document.querySelectorAll(".campo");
+        if (data.status === "ok") {
+          alert("Formulario eliminado.");
+          // Recargar lista
+          document.getElementById("btnVerEditar").click();
+          document.getElementById("formularioEdicion").innerHTML = "";
+        } else {
+          alert("Error al eliminar formulario.");
+        }
+      } catch (e) {
+        alert("Error al conectar con el servidor.");
+        console.error(e);
+      }
+    }
+
+    async function guardarCambios(id, tituloOriginal) {
+      const formularioEdicionDiv = document.getElementById("formularioEdicion");
+      const camposDiv = formularioEdicionDiv.querySelector("#edicionCampos");
+      const camposDOM = camposDiv.querySelectorAll(".campo");
+
       const estructura = [];
+      let nuevoTitulo = tituloOriginal;
 
-      camposDOM.forEach(campo => {
+      // Intentamos sacar nuevo título del h3 (opcional para editar título)
+      const h3 = formularioEdicionDiv.querySelector("h3");
+      if (h3) {
+        const texto = h3.textContent || "";
+        const prefijo = "Editar Formulario:";
+        if (texto.startsWith(prefijo)) {
+          nuevoTitulo = prompt("Editar título del formulario:", texto.slice(prefijo.length).trim()) || nuevoTitulo;
+          h3.textContent = `Editar Formulario: ${nuevoTitulo}`;
+        }
+      }
+
+      for (const campo of camposDOM) {
         const label = campo.querySelector(".nombreCampo").value.trim();
-        const tipo = campo.querySelector(".tipoCampo").value;
-        if (!label || !tipo) return;
+        const tipoSelect = campo.querySelector(".tipoCampo").value;
+        if (!label || !tipoSelect) continue;
 
         const campoObj = { label };
 
-        if (tipo === "number_entero") {
+        if (tipoSelect === "number_entero") {
           campoObj.type = "number";
           campoObj.format = "entero";
-        } else if (tipo === "number_decimal") {
+        } else if (tipoSelect === "number_decimal") {
           campoObj.type = "number";
           campoObj.format = "decimal";
-        } else if (tipo === "moneda") {
+        } else if (tipoSelect === "moneda") {
           campoObj.type = "number";
           campoObj.isCurrency = true;
-        } else if (tipo === "select") {
+        } else if (tipoSelect === "select") {
           campoObj.type = "select";
-          const opciones = campo.querySelector(".opcionesLista").value.split("\n").map(o => o.trim()).filter(o => o);
-          campoObj.options = opciones;
+          const opcionesTextarea = campo.querySelector(".opcionesLista");
+          campoObj.options = opcionesTextarea ? opcionesTextarea.value.split("\n").map(o => o.trim()).filter(o => o) : [];
         } else {
-          campoObj.type = tipo;
+          campoObj.type = tipoSelect;
         }
 
         estructura.push(campoObj);
-      });
-
-      if (estructura.length === 0) return alert("Agregá al menos un campo.");
+      }
 
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
           body: JSON.stringify({
             action: "guardarFormulario",
-            titulo,
+            id,
+            titulo: nuevoTitulo,
             estructura
-          })
+          }),
+          headers: { "Content-Type": "application/json" }
         });
-        const json = await res.json();
-        if (json.status === "ok") {
-          alert("Formulario guardado correctamente");
-          document.getElementById("contenido").innerHTML = "";
+        const data = await res.json();
+
+        if (data.status === "ok") {
+          alert("Cambios guardados correctamente.");
+          // Recargar lista para reflejar título nuevo
+          document.getElementById("btnVerEditar").click();
         } else {
-          alert("Error al guardar");
+          alert("Error al guardar formulario.");
         }
       } catch (e) {
-        console.error("Error:", e);
         alert("Error al conectar con el servidor.");
+        console.error(e);
       }
     }
+
+    // Al cargar la página, mostramos formulario nuevo vacío
+    mostrarFormularioNuevo();
   </script>
 </body>
 </html>
