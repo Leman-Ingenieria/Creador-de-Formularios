@@ -64,6 +64,10 @@
     }
     .botones-derecha {
       text-align: right;
+      max-width: 500px;
+    }
+    .selectorFormulario {
+      max-width: 500px;
       margin-bottom: 10px;
     }
   </style>
@@ -85,8 +89,8 @@
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
     let hayCambios = false;
-    let selectorFormularios;
-    let ultimaSeleccion = "";
+    let selectorFormulario;
+    let idFormularioActual = "";
 
     document.getElementById("btnFormularios").onclick = () => {
       document.getElementById("submenuFormularios").classList.toggle("show");
@@ -94,6 +98,7 @@
 
     document.getElementById("btnNuevoFormulario").onclick = () => {
       hayCambios = false;
+      idFormularioActual = "";
       const cont = document.getElementById("contenido");
       cont.innerHTML = `
         <h2>Nuevo Formulario</h2>
@@ -108,6 +113,7 @@
     document.getElementById("btnVerEditar").onclick = async () => {
       const cont = document.getElementById("contenido");
       cont.innerHTML = `<h2>Editar Formulario</h2><p>Cargando formularios...</p>`;
+
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
@@ -116,41 +122,101 @@
         const json = await res.json();
         if (json.status !== "ok") throw new Error();
 
-        const lista = json.formularios.filter(f => f.titulo.toLowerCase() !== "título");
-        if (lista.length === 0) {
-          cont.innerHTML = `<p>No hay formularios disponibles.</p>`;
-          return;
-        }
+        const formularios = json.formularios.filter(f => f.titulo.toLowerCase() !== "título");
 
-        selectorFormularios = document.createElement("select");
-        selectorFormularios.innerHTML = `<option value="">Seleccionar un formulario</option>`;
-        lista.forEach(f => {
-          selectorFormularios.innerHTML += `<option value="${f.id}">${f.titulo}</option>`;
+        selectorFormulario = document.createElement("select");
+        selectorFormulario.className = "selectorFormulario";
+        selectorFormulario.innerHTML = `<option value="">Seleccionar un formulario</option>`;
+        formularios.forEach(f => {
+          selectorFormulario.innerHTML += `<option value="${f.id}">${f.titulo}</option>`;
         });
 
-        selectorFormularios.onchange = () => {
-          const nuevoID = selectorFormularios.value;
-          if (!nuevoID || nuevoID === ultimaSeleccion) return;
+        selectorFormulario.onchange = async () => {
+          const nuevoID = selectorFormulario.value;
+          if (!nuevoID || nuevoID === idFormularioActual) return;
 
           if (hayCambios) {
             const confirmar = confirm("Los cambios no se han guardado. ¿Deseás seleccionar otro formulario?");
             if (!confirmar) {
-              selectorFormularios.value = ultimaSeleccion;
+              selectorFormulario.value = idFormularioActual;
               return;
             }
           }
 
-          ultimaSeleccion = nuevoID;
-          cargarFormularioEdicion(nuevoID);
+          idFormularioActual = nuevoID;
+          hayCambios = false;
+          await cargarFormulario(nuevoID);
         };
 
         cont.innerHTML = `<h2>Editar Formulario</h2>`;
-        cont.appendChild(selectorFormularios);
+        cont.appendChild(selectorFormulario);
       } catch (e) {
         console.error(e);
-        cont.innerHTML = `<p>Error al cargar formularios.</p>`;
+        document.getElementById("contenido").innerHTML = "Error al conectar con el servidor.";
       }
     };
+
+    async function cargarFormulario(id) {
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "getFormulario", id })
+        });
+        const json = await res.json();
+        if (json.status !== "ok") throw new Error();
+
+        const { titulo, estructura } = json;
+        const cont = document.getElementById("contenido");
+
+        cont.innerHTML = `
+          <h2>Editar Formulario</h2>
+          ${selectorFormulario.outerHTML}
+          <label>Título del Formulario:</label>
+          <input type="text" id="tituloFormulario" value="${titulo}" oninput="hayCambios = true;">
+          <div class="botones-derecha">
+            <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
+            <button onclick="eliminarFormulario('${id}')">Eliminar</button>
+          </div>
+          <div id="camposContainer"></div>
+          <button onclick="agregarCampo()">➕ Agregar campo</button>
+          <button onclick="guardarFormulario('${id}')">💾 Guardar Formulario</button>
+        `;
+
+        const camposContainer = document.getElementById("camposContainer");
+
+        estructura.forEach(c => {
+          const campoDiv = document.createElement("div");
+          campoDiv.className = "campo";
+          campoDiv.innerHTML = `
+            <span class="eliminar" onclick="this.parentElement.remove(); hayCambios = true;">❌</span>
+            <label>Nombre del campo:</label>
+            <input type="text" class="nombreCampo" value="${c.label}" oninput="hayCambios = true;">
+            <label>Tipo de campo:</label>
+            <select class="tipoCampo" onchange="actualizarOpciones(this); hayCambios = true;">
+              <option value="">Seleccionar tipo</option>
+              <option value="text"${c.type === "text" ? " selected" : ""}>Texto</option>
+              <option value="number_entero"${c.type === "number" && c.format === "entero" ? " selected" : ""}>Número entero</option>
+              <option value="number_decimal"${c.type === "number" && c.format === "decimal" ? " selected" : ""}>Número decimal</option>
+              <option value="moneda"${c.type === "number" && c.isCurrency ? " selected" : ""}>Moneda</option>
+              <option value="select"${c.type === "select" ? " selected" : ""}>Lista desplegable</option>
+            </select>
+            <div class="opcionesExtra"></div>
+          `;
+          camposContainer.appendChild(campoDiv);
+
+          if (c.type === "select") {
+            const opcionesExtra = campoDiv.querySelector(".opcionesExtra");
+            opcionesExtra.innerHTML = `
+              <label>Opciones (una por línea):</label>
+              <textarea class="opcionesLista" rows="4" oninput="hayCambios = true;">${(c.options || []).join("\n")}</textarea>
+            `;
+          }
+        });
+      } catch (e) {
+        console.error(e);
+        alert("Error al cargar el formulario.");
+      }
+    }
 
     function agregarCampo() {
       const cont = document.getElementById("camposContainer");
@@ -249,67 +315,6 @@
       } catch (e) {
         console.error("Error:", e);
         alert("Error al conectar con el servidor.");
-      }
-    }
-
-    async function cargarFormularioEdicion(id) {
-      try {
-        const res = await fetch(urlWebApp, {
-          method: "POST",
-          body: JSON.stringify({ action: "getFormulario", id })
-        });
-        const json = await res.json();
-        if (json.status !== "ok") throw new Error();
-
-        const { titulo, estructura } = json;
-        const cont = document.getElementById("contenido");
-
-        cont.innerHTML = `
-          <h2>Editar Formulario</h2>
-          <div class="botones-derecha">
-            <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
-            <button onclick="eliminarFormulario('${id}')">Eliminar</button>
-          </div>
-          <label>Título del Formulario:</label>
-          <input type="text" id="tituloFormulario" value="${titulo}" oninput="hayCambios = true;">
-          <div id="camposContainer"></div>
-          <button onclick="agregarCampo()">➕ Agregar campo</button>
-          <button onclick="guardarFormulario('${id}')">💾 Guardar Formulario</button>
-        `;
-
-        const contCampos = document.getElementById("camposContainer");
-        estructura.forEach(c => {
-          const campoDiv = document.createElement("div");
-          campoDiv.className = "campo";
-          campoDiv.innerHTML = `
-            <span class="eliminar" onclick="this.parentElement.remove(); hayCambios = true;">❌</span>
-            <label>Nombre del campo:</label>
-            <input type="text" class="nombreCampo" value="${c.label}" oninput="hayCambios = true;">
-            <label>Tipo de campo:</label>
-            <select class="tipoCampo" onchange="actualizarOpciones(this); hayCambios = true;">
-              <option value="">Seleccionar tipo</option>
-              <option value="text"${c.type === "text" ? " selected" : ""}>Texto</option>
-              <option value="number_entero"${c.type === "number" && c.format === "entero" ? " selected" : ""}>Número entero</option>
-              <option value="number_decimal"${c.type === "number" && c.format === "decimal" ? " selected" : ""}>Número decimal</option>
-              <option value="moneda"${c.type === "number" && c.isCurrency ? " selected" : ""}>Moneda</option>
-              <option value="select"${c.type === "select" ? " selected" : ""}>Lista desplegable</option>
-            </select>
-            <div class="opcionesExtra"></div>
-          `;
-          contCampos.appendChild(campoDiv);
-
-          if (c.type === "select") {
-            const opcionesExtra = campoDiv.querySelector(".opcionesExtra");
-            opcionesExtra.innerHTML = `
-              <label>Opciones (una por línea):</label>
-              <textarea class="opcionesLista" rows="4" oninput="hayCambios = true;">${(c.options || []).join("\n")}</textarea>
-            `;
-          }
-        });
-        hayCambios = false;
-      } catch (e) {
-        console.error(e);
-        alert("Error al cargar el formulario.");
       }
     }
 
