@@ -119,8 +119,8 @@
 </head>
 <body>
   <nav>
-    <button id="btnFormularios">Formularios ▾</button>
-    <div id="submenuFormularios" class="submenu">
+    <button id="btnFormularios" onclick="document.getElementById('submenuFormularios').classList.toggle('show')">Formularios ▾</button>
+    <div id="submenuFormularios" class="submenu show">
       <button id="btnVerEditar">Ver/Editar</button>
       <button id="btnNuevoFormulario">Nuevo Formulario</button>
     </div>
@@ -135,4 +135,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
