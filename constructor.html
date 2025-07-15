@@ -63,17 +63,8 @@
       font-size: 16px;
     }
     .botones-derecha {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
+      text-align: right;
       margin-bottom: 10px;
-    }
-    .seccion-edicion {
-      margin-top: 30px;
-      max-width: 520px;
-    }
-    #tituloFormulario {
-      max-width: 100%;
     }
   </style>
 </head>
@@ -93,22 +84,24 @@
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
+    let hayCambios = false;
+    let selectorFormularios;
+    let ultimaSeleccion = "";
 
     document.getElementById("btnFormularios").onclick = () => {
       document.getElementById("submenuFormularios").classList.toggle("show");
     };
 
     document.getElementById("btnNuevoFormulario").onclick = () => {
+      hayCambios = false;
       const cont = document.getElementById("contenido");
       cont.innerHTML = `
         <h2>Nuevo Formulario</h2>
-        <div class="seccion-edicion">
-          <label>Título del Formulario:</label>
-          <input type="text" id="tituloFormulario">
-          <div id="camposContainer"></div>
-          <button onclick="agregarCampo()">➕ Agregar campo</button>
-          <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
-        </div>
+        <label>Título del Formulario:</label>
+        <input type="text" id="tituloFormulario" oninput="hayCambios = true;">
+        <div id="camposContainer"></div>
+        <button onclick="agregarCampo()">➕ Agregar campo</button>
+        <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
       `;
     };
 
@@ -129,18 +122,30 @@
           return;
         }
 
-        const selector = document.createElement("select");
-        selector.innerHTML = `<option value="">Seleccionar un formulario</option>`;
+        selectorFormularios = document.createElement("select");
+        selectorFormularios.innerHTML = `<option value="">Seleccionar un formulario</option>`;
         lista.forEach(f => {
-          selector.innerHTML += `<option value="${f.id}">${f.titulo}</option>`;
+          selectorFormularios.innerHTML += `<option value="${f.id}">${f.titulo}</option>`;
         });
 
-        selector.onchange = () => {
-          if (selector.value) cargarFormularioEdicion(selector.value);
+        selectorFormularios.onchange = () => {
+          const nuevoID = selectorFormularios.value;
+          if (!nuevoID || nuevoID === ultimaSeleccion) return;
+
+          if (hayCambios) {
+            const confirmar = confirm("Los cambios no se han guardado. ¿Deseás seleccionar otro formulario?");
+            if (!confirmar) {
+              selectorFormularios.value = ultimaSeleccion;
+              return;
+            }
+          }
+
+          ultimaSeleccion = nuevoID;
+          cargarFormularioEdicion(nuevoID);
         };
 
         cont.innerHTML = `<h2>Editar Formulario</h2>`;
-        cont.appendChild(selector);
+        cont.appendChild(selectorFormularios);
       } catch (e) {
         console.error(e);
         cont.innerHTML = `<p>Error al cargar formularios.</p>`;
@@ -154,12 +159,12 @@
       campoDiv.className = "campo";
 
       campoDiv.innerHTML = `
-        <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+        <span class="eliminar" onclick="this.parentElement.remove(); hayCambios = true;">❌</span>
         <label>Nombre del campo:</label>
-        <input type="text" class="nombreCampo">
+        <input type="text" class="nombreCampo" oninput="hayCambios = true;">
 
         <label>Tipo de campo:</label>
-        <select class="tipoCampo" onchange="actualizarOpciones(this)">
+        <select class="tipoCampo" onchange="actualizarOpciones(this); hayCambios = true;">
           <option value="">Seleccionar tipo</option>
           <option value="text">Texto</option>
           <option value="number_entero">Número entero</option>
@@ -171,6 +176,7 @@
       `;
 
       cont.appendChild(campoDiv);
+      hayCambios = true;
     }
 
     function actualizarOpciones(select) {
@@ -181,7 +187,7 @@
       if (tipo === "select") {
         opcionesDiv.innerHTML = `
           <label>Opciones (una por línea):</label>
-          <textarea class="opcionesLista" rows="4"></textarea>
+          <textarea class="opcionesLista" rows="4" oninput="hayCambios = true;"></textarea>
         `;
       }
     }
@@ -235,6 +241,7 @@
         const json = await res.json();
         if (json.status === "ok") {
           alert("Formulario guardado correctamente");
+          hayCambios = false;
           document.getElementById("contenido").innerHTML = "";
         } else {
           alert("Error al guardar");
@@ -257,18 +264,17 @@
         const { titulo, estructura } = json;
         const cont = document.getElementById("contenido");
 
-        cont.innerHTML += `
-          <div class="seccion-edicion">
-            <div class="botones-derecha">
-              <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
-              <button onclick="eliminarFormulario('${id}')">Eliminar</button>
-            </div>
-            <label>Título del Formulario:</label>
-            <input type="text" id="tituloFormulario" value="${titulo}">
-            <div id="camposContainer"></div>
-            <button onclick="agregarCampo()">➕ Agregar campo</button>
-            <button onclick="guardarFormulario('${id}')">💾 Guardar Formulario</button>
+        cont.innerHTML = `
+          <h2>Editar Formulario</h2>
+          <div class="botones-derecha">
+            <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
+            <button onclick="eliminarFormulario('${id}')">Eliminar</button>
           </div>
+          <label>Título del Formulario:</label>
+          <input type="text" id="tituloFormulario" value="${titulo}" oninput="hayCambios = true;">
+          <div id="camposContainer"></div>
+          <button onclick="agregarCampo()">➕ Agregar campo</button>
+          <button onclick="guardarFormulario('${id}')">💾 Guardar Formulario</button>
         `;
 
         const contCampos = document.getElementById("camposContainer");
@@ -276,11 +282,11 @@
           const campoDiv = document.createElement("div");
           campoDiv.className = "campo";
           campoDiv.innerHTML = `
-            <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+            <span class="eliminar" onclick="this.parentElement.remove(); hayCambios = true;">❌</span>
             <label>Nombre del campo:</label>
-            <input type="text" class="nombreCampo" value="${c.label}">
+            <input type="text" class="nombreCampo" value="${c.label}" oninput="hayCambios = true;">
             <label>Tipo de campo:</label>
-            <select class="tipoCampo" onchange="actualizarOpciones(this)">
+            <select class="tipoCampo" onchange="actualizarOpciones(this); hayCambios = true;">
               <option value="">Seleccionar tipo</option>
               <option value="text"${c.type === "text" ? " selected" : ""}>Texto</option>
               <option value="number_entero"${c.type === "number" && c.format === "entero" ? " selected" : ""}>Número entero</option>
@@ -296,10 +302,11 @@
             const opcionesExtra = campoDiv.querySelector(".opcionesExtra");
             opcionesExtra.innerHTML = `
               <label>Opciones (una por línea):</label>
-              <textarea class="opcionesLista" rows="4">${(c.options || []).join("\n")}</textarea>
+              <textarea class="opcionesLista" rows="4" oninput="hayCambios = true;">${(c.options || []).join("\n")}</textarea>
             `;
           }
         });
+        hayCambios = false;
       } catch (e) {
         console.error(e);
         alert("Error al cargar el formulario.");
