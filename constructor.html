@@ -62,14 +62,18 @@
       padding: 10px;
       font-size: 16px;
     }
-    .botones-superior {
+    .botones-derecha {
       display: flex;
+      justify-content: flex-end;
       gap: 10px;
-      margin-top: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
     .seccion-edicion {
-      margin-top: 40px;
+      margin-top: 30px;
+      max-width: 520px;
+    }
+    #tituloFormulario {
+      max-width: 100%;
     }
   </style>
 </head>
@@ -110,7 +114,7 @@
 
     document.getElementById("btnVerEditar").onclick = async () => {
       const cont = document.getElementById("contenido");
-      cont.innerHTML = `<p>Cargando formularios...</p>`;
+      cont.innerHTML = `<h2>Editar Formulario</h2><p>Cargando formularios...</p>`;
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
@@ -242,8 +246,6 @@
     }
 
     async function cargarFormularioEdicion(id) {
-      const cont = document.getElementById("contenido");
-      cont.innerHTML += `<p>Cargando...</p>`;
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
@@ -253,9 +255,11 @@
         if (json.status !== "ok") throw new Error();
 
         const { titulo, estructura } = json;
+        const cont = document.getElementById("contenido");
+
         cont.innerHTML += `
           <div class="seccion-edicion">
-            <div class="botones-superior">
+            <div class="botones-derecha">
               <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
               <button onclick="eliminarFormulario('${id}')">Eliminar</button>
             </div>
@@ -296,7 +300,6 @@
             `;
           }
         });
-
       } catch (e) {
         console.error(e);
         alert("Error al cargar el formulario.");
@@ -324,3 +327,4 @@
   </script>
 </body>
 </html>
+
