@@ -62,10 +62,14 @@
       padding: 10px;
       font-size: 16px;
     }
-    #accionesEdicion {
-      margin-top: 10px;
+    .botones-superior {
       display: flex;
       gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    .seccion-edicion {
+      margin-top: 40px;
     }
   </style>
 </head>
@@ -73,7 +77,7 @@
   <nav>
     <button id="btnFormularios">Formularios ▾</button>
     <div id="submenuFormularios" class="submenu">
-      <button onclick="mostrarSelectorEdicion()">Ver/Editar</button>
+      <button id="btnVerEditar">Ver/Editar</button>
       <button id="btnNuevoFormulario">Nuevo Formulario</button>
     </div>
   </nav>
@@ -94,15 +98,52 @@
       const cont = document.getElementById("contenido");
       cont.innerHTML = `
         <h2>Nuevo Formulario</h2>
-        <label>Título del Formulario:</label>
-        <input type="text" id="tituloFormulario">
-        <div id="camposContainer"></div>
-        <button onclick="agregarCampo()">➕ Agregar campo</button>
-        <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
+        <div class="seccion-edicion">
+          <label>Título del Formulario:</label>
+          <input type="text" id="tituloFormulario">
+          <div id="camposContainer"></div>
+          <button onclick="agregarCampo()">➕ Agregar campo</button>
+          <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
+        </div>
       `;
     };
 
-    function agregarCampo(campo = {}) {
+    document.getElementById("btnVerEditar").onclick = async () => {
+      const cont = document.getElementById("contenido");
+      cont.innerHTML = `<p>Cargando formularios...</p>`;
+      try {
+        const res = await fetch(urlWebApp, {
+          method: "POST",
+          body: JSON.stringify({ action: "getFormularios" })
+        });
+        const json = await res.json();
+        if (json.status !== "ok") throw new Error();
+
+        const lista = json.formularios.filter(f => f.titulo.toLowerCase() !== "título");
+        if (lista.length === 0) {
+          cont.innerHTML = `<p>No hay formularios disponibles.</p>`;
+          return;
+        }
+
+        const selector = document.createElement("select");
+        selector.innerHTML = `<option value="">Seleccionar un formulario</option>`;
+        lista.forEach(f => {
+          selector.innerHTML += `<option value="${f.id}">${f.titulo}</option>`;
+        });
+
+        selector.onchange = () => {
+          if (selector.value) cargarFormularioEdicion(selector.value);
+        };
+
+        cont.innerHTML = `<h2>Editar Formulario</h2>`;
+        cont.appendChild(selector);
+      } catch (e) {
+        console.error(e);
+        cont.innerHTML = `<p>Error al cargar formularios.</p>`;
+      }
+    };
+
+    function agregarCampo() {
       const cont = document.getElementById("camposContainer");
 
       const campoDiv = document.createElement("div");
@@ -111,7 +152,7 @@
       campoDiv.innerHTML = `
         <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
         <label>Nombre del campo:</label>
-        <input type="text" class="nombreCampo" value="${campo.label || ''}">
+        <input type="text" class="nombreCampo">
 
         <label>Tipo de campo:</label>
         <select class="tipoCampo" onchange="actualizarOpciones(this)">
@@ -126,20 +167,6 @@
       `;
 
       cont.appendChild(campoDiv);
-
-      const select = campoDiv.querySelector(".tipoCampo");
-
-      if (campo.type === "number" && campo.format === "entero") select.value = "number_entero";
-      else if (campo.type === "number" && campo.format === "decimal") select.value = "number_decimal";
-      else if (campo.type === "number" && campo.isCurrency) select.value = "moneda";
-      else if (campo.type === "select") select.value = "select";
-      else select.value = campo.type || "";
-
-      actualizarOpciones(select);
-
-      if (campo.options && campo.options.length > 0) {
-        campoDiv.querySelector(".opcionesLista").value = campo.options.join("\n");
-      }
     }
 
     function actualizarOpciones(select) {
@@ -155,7 +182,7 @@
       }
     }
 
-    async function guardarFormulario(id = null) {
+    async function guardarFormulario(idExistente = null) {
       const titulo = document.getElementById("tituloFormulario").value.trim();
       if (!titulo) return alert("El formulario necesita un título.");
 
@@ -196,9 +223,9 @@
           method: "POST",
           body: JSON.stringify({
             action: "guardarFormulario",
-            id,
             titulo,
-            estructura
+            estructura,
+            ...(idExistente && { id: idExistente })
           })
         });
         const json = await res.json();
@@ -214,81 +241,83 @@
       }
     }
 
-    async function mostrarSelectorEdicion() {
+    async function cargarFormularioEdicion(id) {
       const cont = document.getElementById("contenido");
-      cont.innerHTML = `
-        <h2>Editar Formulario</h2>
-        <label>Selecciona un formulario:</label>
-        <select id="selectorFormularios"><option>Cargando...</option></select>
-        <div id="zonaEdicion"></div>
-      `;
-
+      cont.innerHTML += `<p>Cargando...</p>`;
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
-          body: JSON.stringify({ action: "getFormularios" })
+          body: JSON.stringify({ action: "getFormulario", id })
         });
         const json = await res.json();
+        if (json.status !== "ok") throw new Error();
 
-        const select = document.getElementById("selectorFormularios");
-        select.innerHTML = `<option value="">-- Selecciona --</option>`;
-        json.formularios.forEach(f => {
-          select.innerHTML += `<option value="${f.id}">${f.titulo}</option>`;
-        });
-
-        select.onchange = async function () {
-          const id = this.value;
-          if (!id) return;
-
-          const res = await fetch(urlWebApp, {
-            method: "POST",
-            body: JSON.stringify({ action: "getFormulario", id })
-          });
-          const json = await res.json();
-
-          const zonaEdicion = document.getElementById("zonaEdicion");
-          zonaEdicion.innerHTML = `
-            <label>Título del Formulario:</label>
-            <input type="text" id="tituloFormulario" value="${json.titulo}">
-            <div id="accionesEdicion">
+        const { titulo, estructura } = json;
+        cont.innerHTML += `
+          <div class="seccion-edicion">
+            <div class="botones-superior">
               <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
               <button onclick="eliminarFormulario('${id}')">Eliminar</button>
-              <button onclick="guardarFormulario('${id}')">Guardar Cambios</button>
             </div>
+            <label>Título del Formulario:</label>
+            <input type="text" id="tituloFormulario" value="${titulo}">
             <div id="camposContainer"></div>
-          `;
+            <button onclick="agregarCampo()">➕ Agregar campo</button>
+            <button onclick="guardarFormulario('${id}')">💾 Guardar Formulario</button>
+          </div>
+        `;
 
-          document.getElementById("camposContainer").innerHTML = "";
-          json.estructura.forEach(campo => agregarCampo(campo));
-        };
+        const contCampos = document.getElementById("camposContainer");
+        estructura.forEach(c => {
+          const campoDiv = document.createElement("div");
+          campoDiv.className = "campo";
+          campoDiv.innerHTML = `
+            <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+            <label>Nombre del campo:</label>
+            <input type="text" class="nombreCampo" value="${c.label}">
+            <label>Tipo de campo:</label>
+            <select class="tipoCampo" onchange="actualizarOpciones(this)">
+              <option value="">Seleccionar tipo</option>
+              <option value="text"${c.type === "text" ? " selected" : ""}>Texto</option>
+              <option value="number_entero"${c.type === "number" && c.format === "entero" ? " selected" : ""}>Número entero</option>
+              <option value="number_decimal"${c.type === "number" && c.format === "decimal" ? " selected" : ""}>Número decimal</option>
+              <option value="moneda"${c.type === "number" && c.isCurrency ? " selected" : ""}>Moneda</option>
+              <option value="select"${c.type === "select" ? " selected" : ""}>Lista desplegable</option>
+            </select>
+            <div class="opcionesExtra"></div>
+          `;
+          contCampos.appendChild(campoDiv);
+
+          if (c.type === "select") {
+            const opcionesExtra = campoDiv.querySelector(".opcionesExtra");
+            opcionesExtra.innerHTML = `
+              <label>Opciones (una por línea):</label>
+              <textarea class="opcionesLista" rows="4">${(c.options || []).join("\n")}</textarea>
+            `;
+          }
+        });
 
       } catch (e) {
-        document.getElementById("contenido").innerHTML = "Error al cargar formularios.";
         console.error(e);
+        alert("Error al cargar el formulario.");
       }
     }
 
     async function eliminarFormulario(id) {
-      const confirmar = confirm("¿Estás seguro que querés eliminar este formulario?");
-      if (!confirmar) return;
-
+      if (!confirm("¿Estás seguro de que querés eliminar este formulario?")) return;
       try {
         const res = await fetch(urlWebApp, {
           method: "POST",
-          body: JSON.stringify({
-            action: "eliminarFormulario",
-            id
-          })
+          body: JSON.stringify({ action: "eliminarFormulario", id })
         });
         const json = await res.json();
         if (json.status === "ok") {
-          alert("Formulario eliminado.");
-          mostrarSelectorEdicion();
+          alert("Formulario eliminado");
+          document.getElementById("contenido").innerHTML = "";
         } else {
-          alert("No se pudo eliminar.");
+          alert("No se pudo eliminar");
         }
       } catch (e) {
-        console.error("Error:", e);
         alert("Error al conectar con el servidor.");
       }
     }
