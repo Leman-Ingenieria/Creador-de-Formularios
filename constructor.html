@@ -34,7 +34,6 @@
       border: 1px solid #ccc;
       border-radius: 5px;
       position: relative;
-      background: #fafafa;
     }
     .campo .eliminar {
       position: absolute;
@@ -81,24 +80,72 @@
 
   <script>
     const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
+    let formularioEditandoId = null;
 
     document.getElementById("btnFormularios").onclick = () => {
       document.getElementById("submenuFormularios").classList.toggle("show");
     };
 
     document.getElementById("btnNuevoFormulario").onclick = () => {
+      formularioEditandoId = null;
+      mostrarFormularioEdicion("Nuevo Formulario");
+    };
+
+    function mostrarFormularioEdicion(tituloInicial, estructura = []) {
       const cont = document.getElementById("contenido");
       cont.innerHTML = `
-        <h2>Nuevo Formulario</h2>
+        <h2>${tituloInicial}</h2>
         <label>Título del Formulario:</label>
-        <input type="text" id="tituloFormulario">
+        <input type="text" id="tituloFormulario" value="${tituloInicial !== 'Nuevo Formulario' ? tituloInicial : ''}">
         <div id="camposContainer"></div>
         <button onclick="agregarCampo()">➕ Agregar campo</button>
         <button onclick="guardarFormulario()">💾 Guardar Formulario</button>
       `;
-    };
 
-    function agregarCampo(campoData = {}) {
+      estructura.forEach(campo => {
+        const contCampos = document.getElementById("camposContainer");
+        const campoDiv = document.createElement("div");
+        campoDiv.className = "campo";
+
+        campoDiv.innerHTML = `
+          <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
+          <label>Nombre del campo:</label>
+          <input type="text" class="nombreCampo" value="${campo.label}">
+
+          <label>Tipo de campo:</label>
+          <select class="tipoCampo" onchange="actualizarOpciones(this)">
+            <option value="">Seleccionar tipo</option>
+            <option value="text">Texto</option>
+            <option value="number_entero">Número entero</option>
+            <option value="number_decimal">Número decimal</option>
+            <option value="moneda">Moneda</option>
+            <option value="select">Lista desplegable</option>
+          </select>
+          <div class="opcionesExtra"></div>
+        `;
+
+        contCampos.appendChild(campoDiv);
+
+        const selectTipo = campoDiv.querySelector(".tipoCampo");
+        if (campo.type === "number" && campo.format === "entero") {
+          selectTipo.value = "number_entero";
+        } else if (campo.type === "number" && campo.format === "decimal") {
+          selectTipo.value = "number_decimal";
+        } else if (campo.type === "number" && campo.isCurrency) {
+          selectTipo.value = "moneda";
+        } else {
+          selectTipo.value = campo.type;
+        }
+
+        actualizarOpciones(selectTipo);
+
+        if (campo.type === "select" && campo.options) {
+          campoDiv.querySelector(".opcionesLista").value = campo.options.join("\n");
+        }
+      });
+    }
+
+    function agregarCampo() {
       const cont = document.getElementById("camposContainer");
 
       const campoDiv = document.createElement("div");
@@ -106,41 +153,22 @@
 
       campoDiv.innerHTML = `
         <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
-        <div style="display: flex; justify-content: flex-end; gap: 5px; margin-bottom: 5px;">
-          <button type="button" onclick="moverCampo(this, -1)">⬆️</button>
-          <button type="button" onclick="moverCampo(this, 1)">⬇️</button>
-          <button type="button" onclick="duplicarCampo(this)">📄</button>
-        </div>
         <label>Nombre del campo:</label>
-        <input type="text" class="nombreCampo" value="${campoData.label || ''}">
+        <input type="text" class="nombreCampo">
 
         <label>Tipo de campo:</label>
         <select class="tipoCampo" onchange="actualizarOpciones(this)">
           <option value="">Seleccionar tipo</option>
-          <option value="text" ${campoData.type === 'text' ? 'selected' : ''}>Texto</option>
-          <option value="number_entero" ${campoData.format === 'entero' ? 'selected' : ''}>Número entero</option>
-          <option value="number_decimal" ${campoData.format === 'decimal' ? 'selected' : ''}>Número decimal</option>
-          <option value="moneda" ${campoData.isCurrency ? 'selected' : ''}>Moneda</option>
-          <option value="select" ${campoData.type === 'select' ? 'selected' : ''}>Lista desplegable</option>
+          <option value="text">Texto</option>
+          <option value="number_entero">Número entero</option>
+          <option value="number_decimal">Número decimal</option>
+          <option value="moneda">Moneda</option>
+          <option value="select">Lista desplegable</option>
         </select>
-
         <div class="opcionesExtra"></div>
-
-        <label><input type="checkbox" class="campoRequerido" ${campoData.required ? 'checked' : ''}> ¿Es obligatorio?</label>
       `;
 
       cont.appendChild(campoDiv);
-
-      if (campoData.type === "select" && campoData.options) {
-        const textarea = document.createElement("textarea");
-        textarea.className = "opcionesLista";
-        textarea.rows = 4;
-        textarea.value = campoData.options.join("\n");
-
-        const extraDiv = campoDiv.querySelector(".opcionesExtra");
-        extraDiv.innerHTML = `<label>Opciones (una por línea):</label>`;
-        extraDiv.appendChild(textarea);
-      }
     }
 
     function actualizarOpciones(select) {
@@ -156,50 +184,6 @@
       }
     }
 
-    function moverCampo(btn, direccion) {
-      const campo = btn.closest(".campo");
-      const contenedor = document.getElementById("camposContainer");
-      const campos = Array.from(contenedor.children);
-      const index = campos.indexOf(campo);
-
-      const nuevoIndex = index + direccion;
-      if (nuevoIndex < 0 || nuevoIndex >= campos.length) return;
-
-      if (direccion === -1) {
-        contenedor.insertBefore(campo, campos[nuevoIndex]);
-      } else {
-        contenedor.insertBefore(campos[nuevoIndex], campo);
-      }
-    }
-
-    function duplicarCampo(btn) {
-      const campo = btn.closest(".campo");
-      const label = campo.querySelector(".nombreCampo").value.trim();
-      const tipo = campo.querySelector(".tipoCampo").value;
-      const requerido = campo.querySelector(".campoRequerido")?.checked;
-
-      let campoData = { label, required: requerido };
-
-      if (tipo === "number_entero") {
-        campoData.type = "number";
-        campoData.format = "entero";
-      } else if (tipo === "number_decimal") {
-        campoData.type = "number";
-        campoData.format = "decimal";
-      } else if (tipo === "moneda") {
-        campoData.type = "number";
-        campoData.isCurrency = true;
-      } else if (tipo === "select") {
-        campoData.type = "select";
-        const opciones = campo.querySelector(".opcionesLista")?.value.split("\n").map(o => o.trim()).filter(o => o);
-        campoData.options = opciones || [];
-      } else {
-        campoData.type = tipo;
-      }
-
-      agregarCampo(campoData);
-    }
-
     async function guardarFormulario() {
       const titulo = document.getElementById("tituloFormulario").value.trim();
       if (!titulo) return alert("El formulario necesita un título.");
@@ -210,11 +194,9 @@
       camposDOM.forEach(campo => {
         const label = campo.querySelector(".nombreCampo").value.trim();
         const tipo = campo.querySelector(".tipoCampo").value;
-        const requerido = campo.querySelector(".campoRequerido")?.checked;
-
         if (!label || !tipo) return;
 
-        const campoObj = { label, required: requerido };
+        const campoObj = { label };
 
         if (tipo === "number_entero") {
           campoObj.type = "number";
@@ -243,6 +225,7 @@
           method: "POST",
           body: JSON.stringify({
             action: "guardarFormulario",
+            id: formularioEditandoId,
             titulo,
             estructura
           })
@@ -250,7 +233,7 @@
         const json = await res.json();
         if (json.status === "ok") {
           alert("Formulario guardado correctamente");
-          document.getElementById("contenido").innerHTML = "";
+          location.href = location.origin + location.pathname;
         } else {
           alert("Error al guardar");
         }
@@ -259,6 +242,28 @@
         alert("Error al conectar con el servidor.");
       }
     }
+
+    async function cargarFormularioDesdeURL() {
+      const params = new URLSearchParams(window.location.search);
+      const titulo = params.get("formulario");
+      if (!titulo) return;
+
+      try {
+        const res = await fetch(`${urlWebApp}?action=obtenerFormulario&titulo=${encodeURIComponent(titulo)}`);
+        const json = await res.json();
+        if (json.status === "ok") {
+          formularioEditandoId = json.id;
+          mostrarFormularioEdicion(json.titulo, json.estructura);
+        } else {
+          alert("No se pudo cargar el formulario.");
+        }
+      } catch (err) {
+        console.error("Error cargando formulario:", err);
+        alert("Error al obtener el formulario.");
+      }
+    }
+
+    window.onload = cargarFormularioDesdeURL;
   </script>
 </body>
 </html>
