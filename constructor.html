@@ -129,6 +129,363 @@
     <h1>Entorno de Trabajo</h1>
     <div id="contenido"></div>
   </main>
-  <script src="script.js"></script>
+
+  <script>
+    const urlWebApp = "https://script.google.com/macros/s/AKfycbxs4YjQT2QHS3quSyVQLbbv57RIZcI8C2PRcMQoDAs1qSmX9CdmMRp5K6YgUyjf9dqV/exec";
+
+    // Variables globales
+    let formularios = [];
+    let formularioActual = null;
+
+    // Elementos DOM
+    const btnVerEditar = document.getElementById("btnVerEditar");
+    const btnNuevoFormulario = document.getElementById("btnNuevoFormulario");
+    const contenido = document.getElementById("contenido");
+
+    // Eventos botones menú
+    btnVerEditar.addEventListener("click", mostrarListaFormularios);
+    btnNuevoFormulario.addEventListener("click", nuevoFormulario);
+
+    // Función para mostrar lista de formularios para ver/editar
+    function mostrarListaFormularios() {
+      contenido.innerHTML = "<h2>Lista de Formularios</h2>";
+      contenido.appendChild(document.createElement("hr"));
+
+      fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({ action: "getFormularios" }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.status === "ok") {
+          formularios = data.formularios;
+          if (formularios.length === 0) {
+            contenido.innerHTML += "<p>No hay formularios disponibles.</p>";
+            return;
+          }
+          const ul = document.createElement("ul");
+          formularios.forEach(f => {
+            const li = document.createElement("li");
+            li.style.marginBottom = "10px";
+
+            const tituloSpan = document.createElement("span");
+            tituloSpan.textContent = f.titulo;
+            tituloSpan.style.fontWeight = "bold";
+
+            // Botón Ver
+            const btnVer = document.createElement("button");
+            btnVer.textContent = "Ver";
+            btnVer.style.marginLeft = "10px";
+            btnVer.onclick = () => verFormulario(f.id);
+
+            // Botón Editar
+            const btnEditar = document.createElement("button");
+            btnEditar.textContent = "Editar";
+            btnEditar.style.marginLeft = "5px";
+            btnEditar.onclick = () => editarFormulario(f.id);
+
+            // Botón Eliminar
+            const btnEliminar = document.createElement("button");
+            btnEliminar.textContent = "Eliminar";
+            btnEliminar.style.marginLeft = "5px";
+            btnEliminar.onclick = () => eliminarFormulario(f.id);
+
+            li.appendChild(tituloSpan);
+            li.appendChild(btnVer);
+            li.appendChild(btnEditar);
+            li.appendChild(btnEliminar);
+
+            ul.appendChild(li);
+          });
+          contenido.appendChild(ul);
+        } else {
+          contenido.innerHTML = "<p>Error al obtener formularios.</p>";
+        }
+      })
+      .catch(() => {
+        contenido.innerHTML = "<p>Error de conexión.</p>";
+      });
+    }
+
+    // Función para ver formulario (modo sólo lectura)
+    function verFormulario(id) {
+      fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({ action: "getFormulario", id }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.status === "ok") {
+          mostrarFormulario(data.titulo, data.estructura, false);
+        } else {
+          contenido.innerHTML = "<p>Formulario no encontrado.</p>";
+        }
+      })
+      .catch(() => {
+        contenido.innerHTML = "<p>Error de conexión.</p>";
+      });
+    }
+
+    // Función para editar formulario
+    function editarFormulario(id) {
+      fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({ action: "getFormulario", id }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.status === "ok") {
+          formularioActual = { id, titulo: data.titulo, estructura: data.estructura };
+          mostrarFormulario(data.titulo, data.estructura, true);
+        } else {
+          contenido.innerHTML = "<p>Formulario no encontrado.</p>";
+        }
+      })
+      .catch(() => {
+        contenido.innerHTML = "<p>Error de conexión.</p>";
+      });
+    }
+
+    // Función para eliminar formulario
+    function eliminarFormulario(id) {
+      if (!confirm("¿Seguro querés eliminar este formulario? Esta acción es irreversible.")) return;
+
+      fetch(urlWebApp, {
+        method: "POST",
+        body: JSON.stringify({ action: "eliminarFormulario", id }),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.status === "ok") {
+          alert("Formulario eliminado.");
+          mostrarListaFormularios();
+        } else {
+          alert("Error al eliminar formulario.");
+        }
+      })
+      .catch(() => alert("Error de conexión."));
+    }
+
+    // Función para iniciar un nuevo formulario vacío
+    function nuevoFormulario() {
+      formularioActual = { id: null, titulo: "", estructura: [] };
+      mostrarFormulario("", [], true);
+    }
+
+    // Función para mostrar formulario en pantalla (edición o sólo lectura)
+    function mostrarFormulario(titulo, estructura, editable) {
+      contenido.innerHTML = "";
+
+      // Título editable o fijo
+      const divTitulo = document.createElement("div");
+      divTitulo.className = "titulo-formulario";
+      const labelTitulo = document.createElement("label");
+      labelTitulo.className = "titulo-label";
+      labelTitulo.textContent = "Título del formulario:";
+      divTitulo.appendChild(labelTitulo);
+
+      let inputTitulo;
+      if (editable) {
+        inputTitulo = document.createElement("input");
+        inputTitulo.type = "text";
+        inputTitulo.value = titulo;
+        inputTitulo.style.width = "100%";
+        divTitulo.appendChild(inputTitulo);
+      } else {
+        const spanTitulo = document.createElement("span");
+        spanTitulo.textContent = titulo;
+        spanTitulo.style.fontWeight = "bold";
+        divTitulo.appendChild(spanTitulo);
+      }
+      contenido.appendChild(divTitulo);
+
+      // Contenedor campos
+      const camposContainer = document.createElement("div");
+      camposContainer.id = "camposContainer";
+      contenido.appendChild(camposContainer);
+
+      // Renderizar campos
+      function renderCampos(campos) {
+        camposContainer.innerHTML = "";
+        campos.forEach((campo, idx) => {
+          const campoDiv = document.createElement("div");
+          campoDiv.className = "campo";
+
+          if (editable) {
+            // Botón eliminar campo
+            const btnEliminar = document.createElement("span");
+            btnEliminar.className = "eliminar";
+            btnEliminar.textContent = "×";
+            btnEliminar.title = "Eliminar campo";
+            btnEliminar.onclick = () => {
+              estructura.splice(idx, 1);
+              renderCampos(estructura);
+            };
+            campoDiv.appendChild(btnEliminar);
+          }
+
+          // Label editable o no
+          if (editable) {
+            const labelInput = document.createElement("input");
+            labelInput.type = "text";
+            labelInput.value = campo.label || "";
+            labelInput.placeholder = "Etiqueta del campo";
+            labelInput.oninput = () => {
+              estructura[idx].label = labelInput.value;
+            };
+            campoDiv.appendChild(labelInput);
+          } else {
+            const labelSpan = document.createElement("label");
+            labelSpan.textContent = campo.label;
+            campoDiv.appendChild(labelSpan);
+          }
+
+          // Tipo de campo (editable sólo en edición)
+          if (editable) {
+            const selectTipo = document.createElement("select");
+            ["text", "number", "textarea", "select", "checkbox"].forEach(tipo => {
+              const option = document.createElement("option");
+              option.value = tipo;
+              option.textContent = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+              if (campo.type === tipo) option.selected = true;
+              selectTipo.appendChild(option);
+            });
+            selectTipo.onchange = () => {
+              estructura[idx].type = selectTipo.value;
+              if (selectTipo.value !== "select") {
+                delete estructura[idx].options;
+              } else {
+                if (!estructura[idx].options) estructura[idx].options = ["Opción 1", "Opción 2"];
+              }
+              renderCampos(estructura);
+            };
+            campoDiv.appendChild(selectTipo);
+
+            // Opciones para select
+            if (campo.type === "select") {
+              const optionsDiv = document.createElement("div");
+              optionsDiv.style.marginTop = "6px";
+
+              (campo.options || []).forEach((opt, i) => {
+                const optInput = document.createElement("input");
+                optInput.type = "text";
+                optInput.value = opt;
+                optInput.style.marginRight = "5px";
+                optInput.oninput = () => {
+                  estructura[idx].options[i] = optInput.value;
+                };
+                optionsDiv.appendChild(optInput);
+
+                const btnDelOpt = document.createElement("button");
+                btnDelOpt.textContent = "×";
+                btnDelOpt.style.marginRight = "10px";
+                btnDelOpt.onclick = () => {
+                  estructura[idx].options.splice(i, 1);
+                  renderCampos(estructura);
+                };
+                optionsDiv.appendChild(btnDelOpt);
+                optionsDiv.appendChild(document.createElement("br"));
+              });
+
+              const btnAddOpt = document.createElement("button");
+              btnAddOpt.textContent = "Agregar opción";
+              btnAddOpt.onclick = () => {
+                estructura[idx].options.push("Nueva opción");
+                renderCampos(estructura);
+              };
+              optionsDiv.appendChild(btnAddOpt);
+
+              campoDiv.appendChild(optionsDiv);
+            }
+          } else {
+            // En vista solo lectura mostramos tipo y opciones si corresponde
+            const tipoSpan = document.createElement("div");
+            tipoSpan.style.fontSize = "0.9em";
+            tipoSpan.style.color = "#666";
+            tipoSpan.textContent = "Tipo: " + (campo.type || "text");
+            if (campo.type === "select" && campo.options) {
+              tipoSpan.textContent += " (Opciones: " + campo.options.join(", ") + ")";
+            }
+            campoDiv.appendChild(tipoSpan);
+          }
+
+          camposContainer.appendChild(campoDiv);
+        });
+      }
+
+      renderCampos(estructura);
+
+      if (editable) {
+        // Botón para agregar nuevo campo
+        const btnAgregarCampo = document.createElement("button");
+        btnAgregarCampo.textContent = "Agregar campo";
+        btnAgregarCampo.onclick = () => {
+          estructura.push({ label: "", type: "text" });
+          renderCampos(estructura);
+        };
+        contenido.appendChild(btnAgregarCampo);
+
+        // Botones guardar / cancelar
+        const divBotones = document.createElement("div");
+        divBotones.className = "botones-gestion";
+
+        const btnGuardar = document.createElement("button");
+        btnGuardar.textContent = "Guardar formulario";
+        btnGuardar.onclick = () => {
+          const tituloNuevo = inputTitulo.value.trim();
+          if (!tituloNuevo) {
+            alert("El título no puede estar vacío.");
+            return;
+          }
+          if (estructura.length === 0) {
+            alert("Debe agregar al menos un campo.");
+            return;
+          }
+          formularioActual = formularioActual || {};
+          formularioActual.titulo = tituloNuevo;
+          formularioActual.estructura = estructura;
+
+          fetch(urlWebApp, {
+            method: "POST",
+            body: JSON.stringify({
+              action: "guardarFormulario",
+              id: formularioActual.id,
+              titulo: formularioActual.titulo,
+              estructura: formularioActual.estructura
+            }),
+            headers: { "Content-Type": "application/json" }
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            if (data.status === "ok") {
+              alert("Formulario guardado correctamente.");
+              formularioActual.id = data.id;
+              mostrarListaFormularios();
+            } else {
+              alert("Error al guardar formulario.");
+            }
+          })
+          .catch(() => alert("Error de conexión."));
+        };
+
+        const btnCancelar = document.createElement("button");
+        btnCancelar.textContent = "Cancelar";
+        btnCancelar.onclick = mostrarListaFormularios;
+
+        divBotones.appendChild(btnGuardar);
+        divBotones.appendChild(btnCancelar);
+
+        contenido.appendChild(divBotones);
+      }
+    }
+
+    // Carga inicial: mostrar lista de formularios
+    mostrarListaFormularios();
+  </script>
 </body>
 </html>
+
