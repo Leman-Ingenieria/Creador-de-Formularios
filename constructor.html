@@ -97,13 +97,13 @@
     }
     hr {
       max-width: 500px;
-      margin: 20px auto;
+      margin: 20px auto 10px;
       border: none;
       border-top: 1px solid #aaa;
     }
     .label-titulo {
       max-width: 500px;
-      margin: 10px auto 5px;
+      margin: 0 auto 5px;
       font-weight: bold;
     }
     .acciones {
@@ -197,7 +197,7 @@
 
     function mostrarFormularioEdicion(estructura, titulo, id = null) {
       const cont = document.getElementById("contenido");
-      cont.innerHTML = `
+      cont.innerHTML += `
         <hr>
         <div class="label-titulo">Título del Formulario</div>
         <input type="text" id="tituloFormulario" value="${titulo || ""}">
@@ -231,7 +231,6 @@
         <span class="eliminar" onclick="this.parentElement.remove()">❌</span>
         <label>Nombre del campo:</label>
         <input type="text" class="nombreCampo">
-
         <label>Tipo de campo:</label>
         <select class="tipoCampo" onchange="actualizarOpciones(this)">
           <option value="">Seleccionar tipo</option>
@@ -371,4 +370,3 @@
   </script>
 </body>
 </html>
-
