@@ -34,6 +34,9 @@
       border: 1px solid #ccc;
       border-radius: 5px;
       position: relative;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .campo .eliminar {
       position: absolute;
@@ -55,7 +58,7 @@
     }
     #camposContainer {
       max-width: 500px;
-      margin-top: 20px;
+      margin: 20px auto;
     }
     button {
       margin-top: 10px;
@@ -65,10 +68,12 @@
     .botones-derecha {
       text-align: right;
       max-width: 500px;
+      margin: auto;
     }
-    .selectorFormulario {
+    .selectorFormulario, #tituloFormulario {
       max-width: 500px;
-      margin-bottom: 10px;
+      display: block;
+      margin: 10px auto;
     }
   </style>
 </head>
@@ -102,7 +107,7 @@
       const cont = document.getElementById("contenido");
       cont.innerHTML = `
         <h2>Nuevo Formulario</h2>
-        <label>Título del Formulario:</label>
+        <label for="tituloFormulario">Título del Formulario:</label>
         <input type="text" id="tituloFormulario" oninput="hayCambios = true;">
         <div id="camposContainer"></div>
         <button onclick="agregarCampo()">➕ Agregar campo</button>
@@ -171,7 +176,7 @@
         cont.innerHTML = `
           <h2>Editar Formulario</h2>
           ${selectorFormulario.outerHTML}
-          <label>Título del Formulario:</label>
+          <label for="tituloFormulario">Título del Formulario:</label>
           <input type="text" id="tituloFormulario" value="${titulo}" oninput="hayCambios = true;">
           <div class="botones-derecha">
             <button onclick="window.open('formulario.html?id=${id}', '_blank')">Ver</button>
@@ -228,7 +233,6 @@
         <span class="eliminar" onclick="this.parentElement.remove(); hayCambios = true;">❌</span>
         <label>Nombre del campo:</label>
         <input type="text" class="nombreCampo" oninput="hayCambios = true;">
-
         <label>Tipo de campo:</label>
         <select class="tipoCampo" onchange="actualizarOpciones(this); hayCambios = true;">
           <option value="">Seleccionar tipo</option>
@@ -339,4 +343,3 @@
   </script>
 </body>
 </html>
-
